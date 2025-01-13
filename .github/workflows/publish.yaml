@@ -19,5 +19,5 @@ jobs:
         run: .github/scripts/test.sh
       - name: login to crates.io
         run: cargo login ${{ secrets.CRATESIO }}
-      - name: publish CRATE
-        run: .github/scripts/publish.sh CRATE
+      - name: publish bevy_quadtree
+        run: .github/scripts/publish.sh bevy_quadtree
