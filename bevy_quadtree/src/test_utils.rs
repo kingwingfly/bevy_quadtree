@@ -1,8 +1,10 @@
+#![allow(dead_code)]
+
 #[cfg(test)]
-use crate::{BoundCheck, RelativePosition};
+use crate::{Collision, RelativePosition};
 use bevy::prelude::*;
 #[cfg(not(test))]
-use bevy_quadtree::{BoundCheck, RelativePosition};
+use bevy_quadtree::{Collision, RelativePosition};
 
 #[derive(Debug, Component)]
 pub struct MyCircle {
@@ -10,8 +12,8 @@ pub struct MyCircle {
     pub radius: f32,
 }
 
-impl BoundCheck for MyCircle {
-    fn check(&self, rect: Rect) -> RelativePosition {
+impl Collision for MyCircle {
+    fn check(&self, _: Rect) -> RelativePosition {
         todo!()
     }
 }
@@ -22,8 +24,8 @@ pub struct MyRect {
     pub max: Vec2,
 }
 
-impl BoundCheck for MyRect {
-    fn check(&self, rect: Rect) -> RelativePosition {
+impl Collision for MyRect {
+    fn check(&self, _: Rect) -> RelativePosition {
         todo!()
     }
 }
