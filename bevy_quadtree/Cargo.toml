@@ -1,5 +1,5 @@
 [package]
-name = "xxx_core"
+name = "bevy_quadtree"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
@@ -12,4 +12,3 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-tokio = { workspace = true, features = ["rt-multi-thread", "signal", "macros"] }
