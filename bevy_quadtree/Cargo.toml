@@ -12,3 +12,4 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
+bevy = { workspace = true }

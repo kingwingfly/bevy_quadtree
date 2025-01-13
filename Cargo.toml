@@ -13,6 +13,7 @@ documentation = "https://docs.rs/bevy_quadtree"
 
 [workspace.dependencies]
 bevy_quadtree = { path = "bevy_quadtree" }
+bevy = { version = "0.15.1", default-features = false }
 
 [profile.dev]
 opt-level = 3
