@@ -1,0 +1,15 @@
+[package]
+name = "xxx_core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = ""
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[dependencies]
+tokio = { workspace = true, features = ["rt-multi-thread", "signal", "macros"] }

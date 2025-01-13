@@ -1,0 +1,24 @@
+[workspace]
+members = ["xxx_core"]
+resolver = "2"
+
+[workspace.package]
+version = "0.0.1"
+authors = ["Louis <836250617@qq.com>"]
+description = ""
+license = "MIT"
+edition = "2021"
+repository = "https://github.com/kingwingfly/xxx"
+documentation = "https://docs.rs/xxx"
+
+[workspace.dependencies]
+xxx_core = { path = "xxx_core" }
+# async
+tokio = { version = "1", default-features = false }
+
+[profile.release]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
+strip = "debuginfo"
+panic = "abort"
