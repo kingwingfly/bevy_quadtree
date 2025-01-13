@@ -1,6 +1,7 @@
 use bevy::{math::Rect, prelude::Component};
 
-/// A shape that can be used to check if a point is inside it.
+/// As a shape, performs bound check with a rectangle.
+/// Also, as a component, used to store the shape and as a marker in ECS queries.
 pub trait BoundCheck: Component {
     /// Returns bound check result if the point is inside the shape.
     fn check(&self, rect: Rect) -> RelativePosition;
