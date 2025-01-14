@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 
 #[cfg(test)]
-use crate::{Collision, RelativePosition, UpdateCollision};
+use crate::{Collision, Relation, UpdateCollision};
 use bevy::prelude::*;
 #[cfg(not(test))]
-use bevy_quadtree::{Collision, RelativePosition, UpdateCollision};
+use bevy_quadtree::{Collision, Relation, UpdateCollision};
 
 #[derive(Debug, Component, Clone)]
 pub struct MyCircle {
@@ -13,13 +13,13 @@ pub struct MyCircle {
 }
 
 impl Collision<Rect> for MyCircle {
-    fn detect(&self, _: Rect) -> RelativePosition {
+    fn detect(&self, _: Rect) -> Relation {
         todo!()
     }
 }
 
 impl Collision<Line2d> for MyCircle {
-    fn detect(&self, _: Line2d) -> RelativePosition {
+    fn detect(&self, _: Line2d) -> Relation {
         todo!()
     }
 }
@@ -37,13 +37,13 @@ pub struct MyRect {
 }
 
 impl Collision<Rect> for MyRect {
-    fn detect(&self, _: Rect) -> RelativePosition {
+    fn detect(&self, _: Rect) -> Relation {
         todo!()
     }
 }
 
 impl Collision<Line2d> for MyRect {
-    fn detect(&self, _: Line2d) -> RelativePosition {
+    fn detect(&self, _: Line2d) -> Relation {
         todo!()
     }
 }

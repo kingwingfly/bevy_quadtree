@@ -6,7 +6,7 @@ use bevy::{
 /// The result of a bound check.
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RelativePosition {
+pub enum Relation {
     Disjoint,
     ExternallyTangent,
     PartiallyOverlapping,
@@ -18,7 +18,7 @@ pub enum RelativePosition {
 /// Also, as a component, used as a marker in ECS queries.
 pub trait Collision<S> {
     /// Return collision detection result.
-    fn detect(&self, obj: S) -> RelativePosition;
+    fn detect(&self, obj: S) -> Relation;
 }
 
 /// Update the position of the shape during Update and before Collision Detection.
