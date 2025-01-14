@@ -5,7 +5,7 @@ use crate::{DynCollision, UpdateCollision};
 use bevy::prelude::*;
 
 /// A Bevy plugin for quadtree.
-/// # Type Parameters
+/// # Generic Parameters
 /// `S`: Shapes implemented [`AsCollision`], are used to perform Collision Detection,
 /// storing the shape and position info, also serving as a marker component in ECS queries. (can be tuple)
 ///
