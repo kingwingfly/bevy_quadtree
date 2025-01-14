@@ -4,14 +4,24 @@ use bevy::{
 };
 
 /// The result of a bound check.
-#[allow(missing_docs)]
+/// # Example
+/// `a.detect(b)`
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Relation {
+    /// `a` disjoints `b`
     Disjoint,
+    /// `a` externally tangents `b`
     ExternallyTangent,
-    PartiallyOverlapping,
+    /// `a` partially overlaps `b`
+    PartiallyOverlap,
+    /// `a` internally tangents `b`, `a` is in `b` and smaller
     InternallyTangent,
-    CompletelyOverlapping,
+    /// `b` internally tangents `a`, `b` is in `a` and smaller
+    InternallyTangented,
+    /// `a` completely contains `b`, `b` is in `a` and smaller
+    Contain,
+    /// `a` is completely contained by `b`, `a` is in `b` and smaller
+    Contained,
 }
 
 /// Storing shape and position infomation, performs Collision Detection with the given `S`.

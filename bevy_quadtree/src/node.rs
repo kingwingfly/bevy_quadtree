@@ -5,12 +5,16 @@ use bevy::{
     prelude::Entity,
 };
 use core::fmt;
+use std::sync::{Arc, RwLock};
+
+pub type ArcNode<const N: usize, const K: usize> = Arc<RwLock<Node<N, K>>>;
 
 pub(crate) struct Node<const N: usize, const K: usize = 10> {
-    entities: Option<EntityHashMap<Box<dyn DynCollision>>>,
+    entities: EntityHashMap<Arc<dyn DynCollision>>,
     inlet_boundary: Rect,
     outlet_boundary: Rect,
-    children: Option<[Box<Node<N, K>>; 4]>,
+    parent: Option<ArcNode<N, K>>,
+    children: Option<[ArcNode<N, K>; 4]>,
 }
 
 impl<const N: usize, const K: usize> fmt::Debug for Node<N, K> {
@@ -27,66 +31,96 @@ impl<const N: usize, const K: usize> fmt::Debug for Node<N, K> {
 impl<const N: usize, const K: usize> From<Rect> for Node<N, K> {
     fn from(boundary: Rect) -> Self {
         Self {
-            entities: None,
+            entities: EntityHashMap::default(),
             inlet_boundary: boundary,
             outlet_boundary: Rect::from_center_size(
                 boundary.center(),
                 boundary.size() * (K as f32 / 10.),
             ),
+            parent: None,
             children: None,
         }
     }
 }
 
 impl<const N: usize, const K: usize> Node<N, K> {
+    fn new_with_parent(boundary: Rect, parent: ArcNode<N, K>) -> Self {
+        Self {
+            entities: EntityHashMap::default(),
+            inlet_boundary: boundary,
+            outlet_boundary: Rect::from_center_size(
+                boundary.center(),
+                boundary.size() * (K as f32 / 10.),
+            ),
+            parent: Some(parent),
+            children: None,
+        }
+    }
+
     fn len(&self) -> usize {
-        self.entities.as_ref().map(|m| m.len()).unwrap_or(0)
+        self.entities.len()
     }
 
-    pub(crate) fn insert<S>(&mut self, entity: Entity, shape: S)
-    where
-        S: DynCollision + 'static,
-    {
-        self.insert_box(entity, Box::new(shape));
+    pub(crate) fn update_arc(
+        &mut self,
+        entity: Entity,
+        old: Arc<dyn DynCollision>,
+        new: Arc<dyn DynCollision>,
+    ) -> ArcNode<N, K> {
+        // lock children first
+        todo!()
     }
 
-    fn insert_box(&mut self, entity: Entity, shape: Box<dyn DynCollision>) {
-        match self.entities.as_mut() {
-            Some(map) => match map.get_mut(&entity) {
-                Some(s) => {
-                    *s = shape;
-                    return;
-                }
-                None => {
-                    if map.len() < N {
-                        map.insert(entity, shape);
-                        return;
-                    } else {
-                        self.divide();
-                    }
-                }
-            },
-            None => {
-                if self.children.is_none() {
-                    self.entities = Some(EntityHashMap::from_iter([(entity, shape)]));
-                    return;
+    pub(crate) fn insert_arc(
+        this: &ArcNode<N, K>,
+        entity: Entity,
+        shape: Arc<dyn DynCollision>,
+    ) -> ArcNode<N, K> {
+        {
+            let mut this_w = this.write().unwrap();
+
+            if this_w.children.is_none() {
+                if this_w.len() >= N {
+                    drop(this_w);
+                    Self::divide(this);
+                } else {
+                    this_w.entities.insert(entity, shape);
+                    return Arc::clone(this);
                 }
             }
         }
-        for node in self.children.as_mut().unwrap().iter_mut() {
-            match shape.detect(node.inlet_boundary) {
-                Relation::Disjoint => todo!(),
-                Relation::ExternallyTangent => todo!(),
-                Relation::PartiallyOverlapping => todo!(),
-                Relation::InternallyTangent => todo!(),
-                Relation::CompletelyOverlapping => todo!(),
+
+        let this_r = this.read().unwrap();
+        for node in this_r.children.as_ref().unwrap().iter() {
+            let node_r = node.read().unwrap();
+            match shape.detect(node_r.inlet_boundary) {
+                Relation::Disjoint | Relation::ExternallyTangent => {}
+                Relation::PartiallyOverlap | Relation::InternallyTangented | Relation::Contain => {
+                    match &this_r.parent {
+                        Some(p) => {
+                            return Self::insert_arc(p, entity, shape);
+                        }
+                        None => {
+                            drop(node_r);
+                            let mut this_w = this.write().unwrap();
+                            this_w.entities.insert(entity, shape);
+                            return Arc::clone(this);
+                        }
+                    }
+                }
+                Relation::InternallyTangent | Relation::Contained => {
+                    drop(node_r);
+                    return Self::insert_arc(node, entity, shape);
+                }
             }
         }
         unreachable!()
     }
 
-    fn divide(&mut self) {
-        let delta = self.inlet_boundary.size() / 2.;
+    fn divide(this: &ArcNode<N, K>) {
+        let mut this_w = this.write().unwrap();
+        debug_assert!(this_w.children.is_none());
+        let delta = this_w.inlet_boundary.size() / 2.;
         const MIN: [Vec2; 4] = [
             Vec2::new(1., 1.),
             Vec2::new(0., 1.),
@@ -99,15 +133,19 @@ impl<const N: usize, const K: usize> Node<N, K> {
             Vec2::new(1., 1.),
             Vec2::new(2., 1.),
         ];
-        self.children = Some(core::array::from_fn(|i| {
-            Box::new(Node::from(Rect {
-                min: self.inlet_boundary.min + MIN[i] * delta,
-                max: self.inlet_boundary.min + MAX[i] * delta,
-            }))
+        this_w.children = Some(core::array::from_fn(|i| {
+            Arc::new(RwLock::new(Node::new_with_parent(
+                Rect {
+                    min: this_w.inlet_boundary.min + MIN[i] * delta,
+                    max: this_w.inlet_boundary.min + MAX[i] * delta,
+                },
+                Arc::clone(this),
+            )))
         }));
-        let map = self.entities.take().unwrap();
-        for (entity, shape) in map.into_iter() {
-            self.insert_box(entity, shape);
+        let drain = this_w.entities.drain().collect::<Vec<_>>();
+        drop(this_w);
+        for (entity, shape) in drain.into_iter() {
+            Self::insert_arc(this, entity, shape);
         }
     }
 
