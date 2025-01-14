@@ -1,54 +1,56 @@
-#![allow(dead_code)]
-
-#[cfg(test)]
 use crate::{Collision, Relation, UpdateCollision};
 use bevy::prelude::*;
-#[cfg(not(test))]
-use bevy_quadtree::{Collision, Relation, UpdateCollision};
 
+/// Circle shape implemented `AsCollision` trait to be used in the quadtree
+/// and as a Component in the ECS
+#[allow(missing_docs)]
 #[derive(Debug, Component, Clone)]
-pub struct MyCircle {
+pub struct CollisionCircle {
     pub center: Vec2,
     pub radius: f32,
 }
 
-impl Collision<Rect> for MyCircle {
+impl Collision<Rect> for CollisionCircle {
     fn detect(&self, _: Rect) -> Relation {
         todo!()
     }
 }
 
-impl Collision<Line2d> for MyCircle {
+impl Collision<Line2d> for CollisionCircle {
     fn detect(&self, _: Line2d) -> Relation {
         todo!()
     }
 }
 
-impl UpdateCollision for MyCircle {
+impl UpdateCollision for CollisionCircle {
     fn update() -> impl FnOnce(&mut Self, &GlobalTransform) {
         |_, _| {}
     }
 }
 
+/// Rectagle shape implemented `AsCollision` trait to be used in the quadtree
+/// and as a Component in the ECS
 #[derive(Debug, Component, Clone)]
-pub struct MyRect {
+pub struct CollisionRect {
+    /// The minimum point of the rectangle
     pub min: Vec2,
+    /// The maximum point of the rectangle
     pub max: Vec2,
 }
 
-impl Collision<Rect> for MyRect {
+impl Collision<Rect> for CollisionRect {
     fn detect(&self, _: Rect) -> Relation {
         todo!()
     }
 }
 
-impl Collision<Line2d> for MyRect {
+impl Collision<Line2d> for CollisionRect {
     fn detect(&self, _: Line2d) -> Relation {
         todo!()
     }
 }
 
-impl UpdateCollision for MyRect {
+impl UpdateCollision for CollisionRect {
     fn update() -> impl FnOnce(&mut Self, &GlobalTransform) {
         |_, _| {}
     }

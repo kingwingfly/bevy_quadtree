@@ -18,15 +18,12 @@ use bevy::prelude::*;
 /// `K`: For `LooseQuadTree`, K / 10 = outlet_boundary / inlet_boundary. Set K to 10 by default and 20 is founded best.
 /// # Example
 /// ```no_run
-/// # #[path = "test_utils.rs"]
-/// # mod test_utils;
 /// use bevy::prelude::*;
-/// use bevy_quadtree::QuadTreePlugin;
-/// use test_utils::{MyCircle, MyRect};
+/// use bevy_quadtree::{CollisionCircle, CollisionRect, QuadTreePlugin};
 ///
 /// let _ = App::new()
-///    .add_plugins(QuadTreePlugin::<(MyCircle, MyRect), 40, 100, 100, 20>::default())
-///    .add_plugins(QuadTreePlugin::<MyCircle, 40, 100, 100>::default());
+///    .add_plugins(QuadTreePlugin::<(CollisionCircle, CollisionRect), 40, 100, 100, 20>::default())
+///    .add_plugins(QuadTreePlugin::<CollisionCircle, 40, 100, 100>::default());
 /// ```
 #[derive(Debug)]
 pub struct QuadTreePlugin<S, const N: usize, const W: usize, const H: usize, const K: usize = 10>
