@@ -35,7 +35,7 @@ impl<const N: usize, const K: usize> From<Rect> for Node<N, K> {
             inlet_boundary: boundary,
             outlet_boundary: Rect::from_center_size(
                 boundary.center(),
-                boundary.size() * (K as f32 / 10.),
+                boundary.size() * const { K as f32 / 10. },
             ),
             parent: None,
             children: None,
@@ -50,7 +50,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
             inlet_boundary: boundary,
             outlet_boundary: Rect::from_center_size(
                 boundary.center(),
-                boundary.size() * (K as f32 / 10.),
+                boundary.size() * const { K as f32 / 10. },
             ),
             parent: Some(parent),
             children: None,
