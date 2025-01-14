@@ -1,10 +1,13 @@
-use bevy::{math::Rect, prelude::Component};
+use bevy::{
+    math::Rect,
+    prelude::{Component, Line2d},
+};
 
 /// As a shape, performs Collision Detection with a rectangle.
 /// Also, as a component, used to store the shape and as a marker in ECS queries.
-pub trait Collision: Component {
-    /// Returns collision detection result.
-    fn check(&self, rect: Rect) -> RelativePosition;
+pub trait Collision<F>: Component {
+    /// Return collision detection result.
+    fn detect(&self, obj: F) -> RelativePosition;
 }
 
 /// The result of a bound check.
@@ -17,15 +20,16 @@ pub enum RelativePosition {
     CompletelyOverlapping,
 }
 
+/// Marker trait for `T: Collision<Rect> + Collision<Line2d>` and tuple of `T`s
 pub trait AsCollision {}
 
-impl<T> AsCollision for T where T: Collision {}
+impl<T> AsCollision for T where T: Collision<Rect> + Collision<Line2d> {}
 
 macro_rules! impl_as_collision {
-    ($($bound: ident),+) => {
-        impl<$($bound),+> AsCollision for ($($bound),+,)
+    ($($shape: ident),+) => {
+        impl<$($shape),+> AsCollision for ($($shape),+,)
         where
-            $($bound: Collision),+
+            $($shape: Collision<Rect> + Collision<Line2d>),+
         {
         }
     };

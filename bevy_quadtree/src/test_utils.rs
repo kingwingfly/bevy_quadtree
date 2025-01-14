@@ -12,8 +12,14 @@ pub struct MyCircle {
     pub radius: f32,
 }
 
-impl Collision for MyCircle {
-    fn check(&self, _: Rect) -> RelativePosition {
+impl Collision<Rect> for MyCircle {
+    fn detect(&self, _: Rect) -> RelativePosition {
+        todo!()
+    }
+}
+
+impl Collision<Line2d> for MyCircle {
+    fn detect(&self, _: Line2d) -> RelativePosition {
         todo!()
     }
 }
@@ -24,8 +30,14 @@ pub struct MyRect {
     pub max: Vec2,
 }
 
-impl Collision for MyRect {
-    fn check(&self, _: Rect) -> RelativePosition {
+impl Collision<Rect> for MyRect {
+    fn detect(&self, _: Rect) -> RelativePosition {
+        todo!()
+    }
+}
+
+impl Collision<Line2d> for MyRect {
+    fn detect(&self, _: Line2d) -> RelativePosition {
         todo!()
     }
 }

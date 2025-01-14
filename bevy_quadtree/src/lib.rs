@@ -12,5 +12,5 @@ mod tree;
 #[cfg(test)]
 mod test_utils;
 
-pub use collision::{Collision, RelativePosition};
+pub use collision::{AsCollision, Collision, RelativePosition};
 pub use plugin::QuadTreePlugin;

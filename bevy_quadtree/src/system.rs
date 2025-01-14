@@ -1,4 +1,4 @@
-use crate::{tree::QuadTree, Collision};
+use crate::{collision::AsCollision, tree::QuadTree, Collision};
 use bevy::prelude::*;
 
 pub(crate) fn update_quadtree<S, const N: usize, const W: usize, const H: usize, const K: usize>(
@@ -6,7 +6,7 @@ pub(crate) fn update_quadtree<S, const N: usize, const W: usize, const H: usize,
     q: Query<(&GlobalTransform, Entity, &S), Changed<GlobalTransform>>,
 ) where
     QuadTree<N, W, H, K>: Resource,
-    S: Collision,
+    S: AsCollision + Component,
 {
-    for (transform, e, b) in q.iter() {}
+    for (transform, e, s) in q.iter() {}
 }
