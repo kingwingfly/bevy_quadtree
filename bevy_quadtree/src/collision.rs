@@ -10,14 +10,8 @@ use bevy::{
 pub enum Relation {
     /// `a` disjoints `b`
     Disjoint,
-    /// `a` externally tangents `b`
-    ExternallyTangent,
-    /// `a` partially overlaps `b`
-    PartiallyOverlap,
-    /// `a` internally tangents `b`, `a` is in `b` and smaller
-    InternallyTangent,
-    /// `b` internally tangents `a`, `b` is in `a` and smaller
-    InternallyTangented,
+    /// `a` overlaps `b`, including ExternallyTangent, InternallyTangent
+    Overlap,
     /// `a` completely contains `b`, `b` is in `a` and smaller
     Contain,
     /// `a` is completely contained by `b`, `a` is in `b` and smaller

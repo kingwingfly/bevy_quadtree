@@ -68,10 +68,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
     ) -> ArcNode<N, K> {
         let this_r = this.read().unwrap();
         match shape.detect(this_r.outlet_boundary) {
-            Relation::Disjoint
-            | Relation::ExternallyTangent
-            | Relation::InternallyTangented
-            | Relation::Contain => match &this_r.parent {
+            Relation::Disjoint | Relation::Contain => match &this_r.parent {
                 Some(p) => {
                     let node = Self::insert_arc(p, entity, shape);
                     drop(this_r);
@@ -86,7 +83,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
                     Arc::clone(this)
                 }
             },
-            Relation::PartiallyOverlap | Relation::InternallyTangent | Relation::Contained => {
+            Relation::Overlap | Relation::Contained => {
                 drop(this_r);
                 let mut this_w = this.write().unwrap();
                 this_w.entities.insert(entity, shape);
@@ -116,21 +113,19 @@ impl<const N: usize, const K: usize> Node<N, K> {
         for node in this_r.children.as_ref().unwrap().iter() {
             let node_r = node.read().unwrap();
             match shape.detect(node_r.inlet_boundary) {
-                Relation::Disjoint | Relation::ExternallyTangent => {}
-                Relation::PartiallyOverlap | Relation::InternallyTangented | Relation::Contain => {
-                    match &this_r.parent {
-                        Some(p) => {
-                            return Self::insert_arc(p, entity, shape);
-                        }
-                        None => {
-                            drop(node_r);
-                            let mut this_w = this.write().unwrap();
-                            this_w.entities.insert(entity, shape);
-                            return Arc::clone(this);
-                        }
+                Relation::Disjoint => {}
+                Relation::Overlap | Relation::Contain => match &this_r.parent {
+                    Some(p) => {
+                        return Self::insert_arc(p, entity, shape);
                     }
-                }
-                Relation::InternallyTangent | Relation::Contained => {
+                    None => {
+                        drop(node_r);
+                        let mut this_w = this.write().unwrap();
+                        this_w.entities.insert(entity, shape);
+                        return Arc::clone(this);
+                    }
+                },
+                Relation::Contained => {
                     drop(node_r);
                     return Self::insert_arc(node, entity, shape);
                 }

@@ -1,7 +1,7 @@
 use crate::{Collision, Relation, UpdateCollision};
 use bevy::prelude::*;
 
-/// Circle shape implemented `AsCollision` trait to be used in the quadtree
+/// Circle shape implemented `AsCollision` trait to be used in the QuadTree
 /// and as a Component in the ECS
 #[allow(missing_docs)]
 #[derive(Debug, Component, Clone)]
@@ -11,7 +11,7 @@ pub struct CollisionCircle {
 }
 
 impl Collision<Rect> for CollisionCircle {
-    fn detect(&self, _: Rect) -> Relation {
+    fn detect(&self, rect: Rect) -> Relation {
         todo!()
     }
 }
@@ -28,15 +28,10 @@ impl UpdateCollision for CollisionCircle {
     }
 }
 
-/// Rectagle shape implemented `AsCollision` trait to be used in the quadtree
+/// Rectagle shape implemented `AsCollision` trait to be used in the QuadTree
 /// and as a Component in the ECS
-#[derive(Debug, Component, Clone)]
-pub struct CollisionRect {
-    /// The minimum point of the rectangle
-    pub min: Vec2,
-    /// The maximum point of the rectangle
-    pub max: Vec2,
-}
+#[derive(Debug, Component, Clone, Deref)]
+pub struct CollisionRect(pub Rect);
 
 impl Collision<Rect> for CollisionRect {
     fn detect(&self, _: Rect) -> Relation {
