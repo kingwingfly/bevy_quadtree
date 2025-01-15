@@ -62,13 +62,37 @@ impl<const N: usize, const K: usize> Node<N, K> {
     }
 
     pub(crate) fn update_arc(
-        &mut self,
+        this: &ArcNode<N, K>,
         entity: Entity,
-        old: Arc<dyn DynCollision>,
-        new: Arc<dyn DynCollision>,
+        shape: Arc<dyn DynCollision>,
     ) -> ArcNode<N, K> {
-        // lock children first
-        todo!()
+        let this_r = this.read().unwrap();
+        match shape.detect(this_r.outlet_boundary) {
+            Relation::Disjoint
+            | Relation::ExternallyTangent
+            | Relation::InternallyTangented
+            | Relation::Contain => match &this_r.parent {
+                Some(p) => {
+                    let node = Self::insert_arc(p, entity, shape);
+                    drop(this_r);
+                    let mut this_w = this.write().unwrap();
+                    this_w.entities.remove(&entity);
+                    node
+                }
+                None => {
+                    drop(this_r);
+                    let mut this_w = this.write().unwrap();
+                    this_w.entities.insert(entity, shape);
+                    Arc::clone(this)
+                }
+            },
+            Relation::PartiallyOverlap | Relation::InternallyTangent | Relation::Contained => {
+                drop(this_r);
+                let mut this_w = this.write().unwrap();
+                this_w.entities.insert(entity, shape);
+                Arc::clone(this)
+            }
+        }
     }
 
     pub(crate) fn insert_arc(

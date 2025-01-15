@@ -10,7 +10,7 @@ use std::sync::{Arc, RwLock};
 #[derive(Resource)]
 pub struct QuadTree<const N: usize, const W: usize, const H: usize, const K: usize = 10> {
     root: ArcNode<N, K>,
-    entities: Arc<RwLock<EntityHashMap<(ArcNode<N, K>, Arc<dyn DynCollision>)>>>,
+    entities: Arc<RwLock<EntityHashMap<ArcNode<N, K>>>>,
 }
 
 impl<const N: usize, const W: usize, const H: usize, const K: usize> fmt::Debug
@@ -52,15 +52,12 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N,
         let new_node = {
             let entities = self.entities.read().unwrap();
             match entities.get(&entity) {
-                Some((node, old)) => {
-                    let mut node = node.write().unwrap();
-                    node.update_arc(entity, Arc::clone(old), Arc::clone(&shape))
-                }
+                Some(node) => Node::update_arc(node, entity, Arc::clone(&shape)),
                 None => Node::insert_arc(&self.root, entity, Arc::clone(&shape)),
             }
         };
         let mut entities = self.entities.write().unwrap();
-        entities.insert(entity, (new_node, shape));
+        entities.insert(entity, new_node);
     }
 }
 
