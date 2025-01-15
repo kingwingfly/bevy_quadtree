@@ -33,7 +33,8 @@ pub trait Collision<S> {
 
 /// Update the position of the shape during Update and before Collision Detection.
 pub trait UpdateCollision {
-    /// Set the position of the shape. Used for updating the position of the shape.
+    /// Set the position of the shape. Used for updating the position of the shape
+    /// in `PreUpdate` stage when `GlobalTransform` changed.
     fn update() -> impl FnOnce(&mut Self, &GlobalTransform);
 }
 

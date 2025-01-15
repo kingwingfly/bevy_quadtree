@@ -6,10 +6,11 @@ use bevy::{ecs::entity::EntityHashMap, prelude::*};
 use core::fmt;
 use std::sync::{Arc, RwLock};
 
+/// The QuadTree used as `Resource` in this plugin.
 #[derive(Resource)]
-pub(crate) struct QuadTree<const N: usize, const W: usize, const H: usize, const K: usize = 10> {
+pub struct QuadTree<const N: usize, const W: usize, const H: usize, const K: usize = 10> {
     root: ArcNode<N, K>,
-    entities: EntityHashMap<(ArcNode<N, K>, Arc<dyn DynCollision>)>,
+    entities: Arc<RwLock<EntityHashMap<(ArcNode<N, K>, Arc<dyn DynCollision>)>>>,
 }
 
 impl<const N: usize, const W: usize, const H: usize, const K: usize> fmt::Debug
@@ -33,28 +34,43 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> Default
         ))));
         Self {
             root,
-            entities: EntityHashMap::default(),
+            entities: Arc::new(RwLock::new(EntityHashMap::default())),
         }
     }
 }
 
 impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N, W, H, K> {
     fn len(&self) -> usize {
-        self.entities.len()
+        self.entities.read().unwrap().len()
     }
 
-    pub(crate) fn insert<S>(&mut self, entity: Entity, shape: S)
+    pub(crate) fn insert<S>(&self, entity: Entity, shape: S)
     where
         S: DynCollision + 'static,
     {
         let shape: Arc<dyn DynCollision> = Arc::new(shape);
-        let new_node = match self.entities.get(&entity) {
-            Some((node, old)) => {
-                let mut node = node.write().unwrap();
-                node.update_arc(entity, Arc::clone(old), Arc::clone(&shape))
+        let new_node = {
+            let entities = self.entities.read().unwrap();
+            match entities.get(&entity) {
+                Some((node, old)) => {
+                    let mut node = node.write().unwrap();
+                    node.update_arc(entity, Arc::clone(old), Arc::clone(&shape))
+                }
+                None => Node::insert_arc(&self.root, entity, Arc::clone(&shape)),
             }
-            None => Node::insert_arc(&self.root, entity, Arc::clone(&shape)),
         };
-        self.entities.insert(entity, (new_node, shape));
+        let mut entities = self.entities.write().unwrap();
+        entities.insert(entity, (new_node, shape));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::shape::CollisionCircle;
+
+    #[test]
+    fn insert_test() {
+        let tree: QuadTree<2, 4, 4> = QuadTree::default();
     }
 }

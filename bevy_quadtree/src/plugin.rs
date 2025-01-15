@@ -1,5 +1,5 @@
 use crate::collision::AsCollision;
-use crate::system::update_quadtree;
+use crate::system::{update_collision, update_quadtree};
 use crate::tree::QuadTree;
 use crate::{DynCollision, UpdateCollision};
 use bevy::prelude::*;
@@ -52,6 +52,7 @@ where
 {
     fn build(&self, app: &mut App) {
         app.init_resource::<QuadTree<N, W, H, K>>()
+            .add_systems(PreUpdate, update_collision::<S>)
             .add_systems(Update, update_quadtree::<S, N, W, H, K>);
     }
 }
@@ -65,11 +66,18 @@ macro_rules! impl_plugin {
             ($($shape),+,): AsCollision,
         {
             fn build(&self, app: &mut App) {
-                app.init_resource::<QuadTree<N, W, H, K>>().add_systems(
-                    Update,
-                    (
-                        $(update_quadtree::<$shape, N, W, H, K>),+
-                    ),
+                app.init_resource::<QuadTree<N, W, H, K>>()
+                    .add_systems(
+                        PreUpdate,
+                        (
+                            $(update_collision::<$shape>),+
+                        ),
+                    )
+                    .add_systems(
+                        Update,
+                        (
+                            $(update_quadtree::<$shape, N, W, H, K>),+
+                        ),
                 );
             }
         }

@@ -78,7 +78,6 @@ impl<const N: usize, const K: usize> Node<N, K> {
     ) -> ArcNode<N, K> {
         {
             let mut this_w = this.write().unwrap();
-
             if this_w.children.is_none() {
                 if this_w.len() >= N {
                     drop(this_w);
@@ -89,7 +88,6 @@ impl<const N: usize, const K: usize> Node<N, K> {
                 }
             }
         }
-
         let this_r = this.read().unwrap();
         for node in this_r.children.as_ref().unwrap().iter() {
             let node_r = node.read().unwrap();
@@ -118,30 +116,34 @@ impl<const N: usize, const K: usize> Node<N, K> {
     }
 
     fn divide(this: &ArcNode<N, K>) {
+        let children = {
+            let this_r = this.read().unwrap();
+            debug_assert!(this_r.children.is_none());
+            let delta = this_r.inlet_boundary.size() / 2.;
+            const MIN: [Vec2; 4] = [
+                Vec2::new(1., 1.),
+                Vec2::new(0., 1.),
+                Vec2::new(0., 0.),
+                Vec2::new(1., 0.),
+            ];
+            const MAX: [Vec2; 4] = [
+                Vec2::new(2., 2.),
+                Vec2::new(1., 2.),
+                Vec2::new(1., 1.),
+                Vec2::new(2., 1.),
+            ];
+            core::array::from_fn(|i| {
+                Arc::new(RwLock::new(Node::new_with_parent(
+                    Rect {
+                        min: this_r.inlet_boundary.min + MIN[i] * delta,
+                        max: this_r.inlet_boundary.min + MAX[i] * delta,
+                    },
+                    Arc::clone(this),
+                )))
+            })
+        };
         let mut this_w = this.write().unwrap();
-        debug_assert!(this_w.children.is_none());
-        let delta = this_w.inlet_boundary.size() / 2.;
-        const MIN: [Vec2; 4] = [
-            Vec2::new(1., 1.),
-            Vec2::new(0., 1.),
-            Vec2::new(0., 0.),
-            Vec2::new(1., 0.),
-        ];
-        const MAX: [Vec2; 4] = [
-            Vec2::new(2., 2.),
-            Vec2::new(1., 2.),
-            Vec2::new(1., 1.),
-            Vec2::new(2., 1.),
-        ];
-        this_w.children = Some(core::array::from_fn(|i| {
-            Arc::new(RwLock::new(Node::new_with_parent(
-                Rect {
-                    min: this_w.inlet_boundary.min + MIN[i] * delta,
-                    max: this_w.inlet_boundary.min + MAX[i] * delta,
-                },
-                Arc::clone(this),
-            )))
-        }));
+        this_w.children = Some(children);
         let drain = this_w.entities.drain().collect::<Vec<_>>();
         drop(this_w);
         for (entity, shape) in drain.into_iter() {
