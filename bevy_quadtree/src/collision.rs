@@ -1,6 +1,6 @@
 use bevy::{
     math::Rect,
-    prelude::{Component, GlobalTransform, Line2d},
+    prelude::{Component, GlobalTransform},
 };
 
 /// The result of a bound check.
@@ -33,9 +33,9 @@ pub trait UpdateCollision {
 }
 
 /// Object safe trait for storing value in QuadTree
-pub trait DynCollision: Collision<Rect> + Collision<Line2d> + Send + Sync {}
+pub trait DynCollision: Collision<Rect> + Send + Sync {}
 
-impl<T> DynCollision for T where T: Collision<Rect> + Collision<Line2d> + Send + Sync {}
+impl<T> DynCollision for T where T: Collision<Rect> + Send + Sync {}
 
 /// Marker trait for `S: DynCollision + Component` and tuple of `S`s
 pub trait AsCollision {}
