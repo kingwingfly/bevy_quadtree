@@ -246,8 +246,8 @@ impl<const N: usize, const K: usize> Node<N, K> {
         }
     }
 
-    fn remove(&mut self, entity: Entity) {
-        todo!()
+    pub(crate) fn remove(&mut self, entity: &Entity) {
+        self.entities.remove(entity);
     }
 
     fn query(&self, boundary: Rect) -> Vec<Entity> {

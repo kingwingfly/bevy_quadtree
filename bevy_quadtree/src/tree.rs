@@ -63,6 +63,12 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N,
             entities.insert(e, n);
         }
     }
+
+    pub(crate) fn remove(&self, entity: &Entity) {
+        if let Some(node) = self.entities.write().remove(entity) {
+            node.write().remove(entity);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -86,7 +92,7 @@ mod tests {
             },
         );
         assert_eq!(tree.len(), 1);
-        // overwrites the previous entity
+        // overwrites the Entity::PLACEHOLDER
         // (0, 0) 1x1
         tree.insert(
             Entity::PLACEHOLDER,
@@ -106,7 +112,6 @@ mod tests {
             CollisionRect::from(Rect::from_center_size(Vec2::splat(1.), Vec2::ONE)),
         );
         assert!(tree.root.read().children.is_some());
-
         {
             let tree = tree.root.read();
             let child = tree.children.as_ref().unwrap()[0].read();
@@ -155,7 +160,6 @@ mod tests {
             )),
         );
         assert_eq!(tree.len(), 5);
-
         {
             let root = tree.root.read();
             assert_eq!(root.len(), 1);
