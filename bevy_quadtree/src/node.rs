@@ -155,7 +155,8 @@ impl<const N: usize, const K: usize> Node<N, K> {
                     }
                 }
             }
-            let children = this.read().children.clone().unwrap();
+            let this_r = this.read();
+            let children = this_r.children.as_ref().unwrap();
             for (i, node) in children.iter().enumerate() {
                 if omit.contains(&(i as i8)) {
                     continue;
@@ -164,6 +165,8 @@ impl<const N: usize, const K: usize> Node<N, K> {
                 match shape.detect(node_r.inlet_boundary) {
                     Relation::Disjoint => {}
                     Relation::Overlap | Relation::Contain => {
+                        drop(node_r);
+                        drop(this_r);
                         Self::insert_inner(this, entity, shape, changed, &[0, 1, 2, 3]);
                         return;
                     }
