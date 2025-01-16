@@ -30,7 +30,7 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> Default
     for QuadTree<N, W, H, K>
 {
     fn default() -> Self {
-        let root = Arc::new(RwLock::new(Node::from(Rect::from_center_size(
+        let root = Arc::new(RwLock::new(Node::root(Rect::from_center_size(
             Vec2::ZERO,
             Vec2::new(W as f32, H as f32),
         ))));
@@ -106,14 +106,12 @@ mod tests {
             CollisionRect::from(Rect::from_center_size(Vec2::splat(1.), Vec2::ONE)),
         );
         assert!(tree.root.read().children.is_some());
-        assert_eq!(
-            {
-                let tree = tree.root.read();
-                let child = tree.children.as_ref().unwrap()[0].read();
-                child.len()
-            },
-            1
-        );
+
+        {
+            let tree = tree.root.read();
+            let child = tree.children.as_ref().unwrap()[0].read();
+            assert_eq!(child.len(), 1);
+        }
         // (1, 1) 1x1
         tree.insert(
             Entity::from_raw(rng.gen()),
@@ -121,14 +119,11 @@ mod tests {
         );
         assert!(tree.root.read().children.is_some());
         assert_eq!(tree.len(), 4);
-        assert_eq!(
-            {
-                let tree = tree.root.read();
-                let child = tree.children.as_ref().unwrap()[0].read();
-                child.len()
-            },
-            2
-        );
+        {
+            let tree = tree.root.read();
+            let child = tree.children.as_ref().unwrap()[0].read();
+            assert_eq!(child.len(), 2);
+        }
         // (0.5, 0.5) 0.2x0.2
         tree.insert(
             Entity::from_raw(rng.gen()),
@@ -136,17 +131,14 @@ mod tests {
         );
         assert!(tree.root.read().children.is_some());
         assert_eq!(tree.len(), 5);
-        assert_eq!(
-            {
-                let root = tree.root.read();
-                let child = root.children.as_ref().unwrap()[0].read();
-                assert_eq!(child.len(), 2);
-                assert!(child.children.is_some());
-                let child = child.children.as_ref().unwrap()[2].read();
-                child.len()
-            },
-            1
-        );
+        {
+            let root = tree.root.read();
+            let child = root.children.as_ref().unwrap()[0].read();
+            assert_eq!(child.len(), 2);
+            assert!(child.children.is_some());
+            let child = child.children.as_ref().unwrap()[2].read();
+            assert_eq!(child.len(), 1);
+        }
         // update Entity::PLACEHOLDER from (0, 0) 1x1 to (1, 0) 1x1
         tree.insert(
             Entity::PLACEHOLDER,
@@ -158,22 +150,34 @@ mod tests {
         tree.insert(
             Entity::PLACEHOLDER,
             CollisionRect::from(Rect::from_center_size(
-                Vec2::new(0.5, 0.5),
+                Vec2::splat(0.5),
                 Vec2::new(0.2, 0.3),
             )),
         );
         assert_eq!(tree.len(), 5);
-        assert_eq!(
-            {
-                let root = tree.root.read();
-                assert_eq!(root.len(), 1);
-                let child = root.children.as_ref().unwrap()[0].read();
-                assert_eq!(child.len(), 2);
-                assert!(child.children.is_some());
-                let child = child.children.as_ref().unwrap()[2].read();
-                child.len()
-            },
-            2
+
+        {
+            let root = tree.root.read();
+            assert_eq!(root.len(), 1);
+            let child = root.children.as_ref().unwrap()[0].read();
+            assert_eq!(child.len(), 2);
+            assert!(child.children.is_some());
+            let child = child.children.as_ref().unwrap()[2].read();
+            assert_eq!(child.len(), 2);
+        }
+        // update Entity::PLACEHOLDER from (0.5, 0.5) 0.2x0.3 to (1, -1) 1x1
+        tree.insert(
+            Entity::PLACEHOLDER,
+            CollisionRect::from(Rect::from_center_size(Vec2::new(1., -1.), Vec2::splat(1.))),
         );
+        assert_eq!(tree.len(), 5);
+        {
+            let root = tree.root.read();
+            assert_eq!(root.len(), 1);
+            let child = root.children.as_ref().unwrap()[0].read();
+            assert_eq!(child.len(), 2);
+            let child = root.children.as_ref().unwrap()[3].read();
+            assert_eq!(child.len(), 1);
+        }
     }
 }

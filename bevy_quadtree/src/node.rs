@@ -17,12 +17,14 @@ pub(crate) struct Node<const N: usize, const K: usize = 10> {
     outlet_boundary: Rect,
     parent: Option<ArcNode<N, K>>,
     pub(crate) children: Option<[ArcNode<N, K>; 4]>,
+    quadrant: i8,
 }
 
 impl<const N: usize, const K: usize> fmt::Debug for Node<N, K> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Node")
             .field("entities", &self.len())
+            .field("quadrant", &self.quadrant)
             .field("parent", &self.parent.is_some())
             .field("inlet_boundary", &self.inlet_boundary)
             .field("outlet_boundary", &self.outlet_boundary)
@@ -31,8 +33,9 @@ impl<const N: usize, const K: usize> fmt::Debug for Node<N, K> {
     }
 }
 
-impl<const N: usize, const K: usize> From<Rect> for Node<N, K> {
-    fn from(boundary: Rect) -> Self {
+impl<const N: usize, const K: usize> Node<N, K> {
+    fn from(boundary: Rect, quadrant: i8) -> Self {
+        debug_assert!((0..4).contains(&quadrant));
         Self {
             entities: EntityHashMap::default(),
             inlet_boundary: boundary,
@@ -42,12 +45,23 @@ impl<const N: usize, const K: usize> From<Rect> for Node<N, K> {
             ),
             parent: None,
             children: None,
+            quadrant,
         }
     }
-}
 
-impl<const N: usize, const K: usize> Node<N, K> {
-    fn new_with_parent(boundary: Rect, parent: ArcNode<N, K>) -> Self {
+    pub(crate) fn root(boundary: Rect) -> Self {
+        Self {
+            entities: EntityHashMap::default(),
+            inlet_boundary: boundary,
+            outlet_boundary: boundary,
+            parent: None,
+            children: None,
+            quadrant: -1,
+        }
+    }
+
+    fn new_with_parent(boundary: Rect, parent: ArcNode<N, K>, quadrant: i8) -> Self {
+        debug_assert!((0..4).contains(&quadrant));
         Self {
             entities: EntityHashMap::default(),
             inlet_boundary: boundary,
@@ -57,6 +71,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
             ),
             parent: Some(parent),
             children: None,
+            quadrant,
         }
     }
 
@@ -80,7 +95,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
         shape: Box<dyn DynCollision>,
     ) -> Vec<(Entity, ArcNode<N, K>)> {
         let mut changed = vec![];
-        Self::insert_inner(this, entity, shape, &mut changed);
+        Self::insert_inner(this, entity, shape, &mut changed, &[]);
         changed
     }
 
@@ -90,20 +105,31 @@ impl<const N: usize, const K: usize> Node<N, K> {
         shape: Box<dyn DynCollision>,
         changed: &mut Vec<(Entity, ArcNode<N, K>)>,
     ) {
-        this.write().entities.remove(&entity);
         let this_r = this.read();
         match shape.detect(this_r.outlet_boundary) {
-            Relation::Disjoint | Relation::Contain => {
+            Relation::Contain => {
                 if let Some(p) = &this_r.parent {
                     let p = Arc::clone(p);
                     drop(this_r);
-                    Self::insert_omit_children_inner(&p, entity, shape, changed);
+                    this.write().entities.remove(&entity);
+                    Self::insert_inner(&p, entity, shape, changed, &[0, 1, 2, 3]);
                 }
             }
-            Relation::Overlap | Relation::Contained => {
+            Relation::Disjoint => {
                 drop(this_r);
-                Self::insert_inner(this, entity, shape, changed);
+                this.write().entities.remove(&entity);
+                if let Some(p) = &this.read().parent {
+                    Self::insert_inner(p, entity, shape, changed, &[]);
+                }
             }
+            Relation::Overlap | Relation::Contained => match shape.detect(this_r.inlet_boundary) {
+                Relation::Disjoint | Relation::Overlap | Relation::Contain => {}
+                Relation::Contained => {
+                    drop(this_r);
+                    this.write().entities.remove(&entity);
+                    Self::insert_inner(this, entity, shape, changed, &[]);
+                }
+            },
         }
     }
 
@@ -112,69 +138,69 @@ impl<const N: usize, const K: usize> Node<N, K> {
         entity: Entity,
         shape: Box<dyn DynCollision>,
         changed: &mut Vec<(Entity, ArcNode<N, K>)>,
+        omit: &[i8],
     ) {
-        {
+        debug_assert!(omit.iter().all(|i| (0..4).contains(i)));
+        if omit.len() != 4 {
+            {
+                let this_r = this.read();
+                if this_r.children.is_none() {
+                    if this_r.len() >= N {
+                        drop(this_r);
+                        Self::divide_inner(this, changed);
+                    } else {
+                        drop(this_r);
+                        Self::insert_inner(this, entity, shape, changed, &[0, 1, 2, 3]);
+                        return;
+                    }
+                }
+            }
+            let children = this.read().children.clone().unwrap();
+            for (i, node) in children.iter().enumerate() {
+                if omit.contains(&(i as i8)) {
+                    continue;
+                }
+                let node_r = node.read();
+                match shape.detect(node_r.inlet_boundary) {
+                    Relation::Disjoint => {}
+                    Relation::Overlap | Relation::Contain => {
+                        Self::insert_inner(this, entity, shape, changed, &[0, 1, 2, 3]);
+                        return;
+                    }
+                    Relation::Contained => {
+                        drop(node_r);
+                        Self::insert_inner(node, entity, shape, changed, &[]);
+                        return;
+                    }
+                }
+            }
             let this_r = this.read();
-            if this_r.children.is_none() {
-                if this_r.len() >= N {
-                    drop(this_r);
-                    Self::divide_inner(this, changed);
-                } else {
-                    drop(this_r);
-                    Self::insert_omit_children_inner(this, entity, shape, changed);
-                    return;
-                }
+            let quadrant = this_r.quadrant;
+            let p = this_r.parent.clone();
+            drop(this_r);
+            match p {
+                Some(p) => Self::insert_inner(&p, entity, shape, changed, &[quadrant]),
+                None => warn!("{:?} out of QuadTree boundary", entity),
             }
-        }
-        let children = this.read().children.clone().unwrap();
-        for node in children.iter() {
-            let node_r = node.read();
-            match shape.detect(node_r.inlet_boundary) {
-                Relation::Disjoint => {}
-                Relation::Overlap | Relation::Contain => match &node_r.parent {
-                    Some(p) => {
-                        Self::insert_omit_children_inner(p, entity, shape, changed);
+        } else {
+            let this_r = this.read();
+            match shape.detect(this_r.inlet_boundary) {
+                Relation::Overlap | Relation::Disjoint | Relation::Contain => {
+                    if let Some(p) = &this_r.parent {
+                        let p = Arc::clone(p);
+                        let quadrant = this_r.quadrant;
+                        drop(this_r);
+                        Self::insert_inner(&p, entity, shape, changed, &[quadrant]);
                         return;
                     }
-                    None => {
-                        let mut this_w = this.write();
-                        this_w.entities.insert(entity, shape);
-                        changed.push((entity, Arc::clone(this)));
-                        return;
-                    }
-                },
-                Relation::Contained => {
-                    drop(node_r);
-                    Self::insert_inner(node, entity, shape, changed);
-                    return;
                 }
+                Relation::Contained => {}
             }
+            drop(this_r);
+            let mut this_w = this.write();
+            this_w.entities.insert(entity, shape);
+            changed.push((entity, Arc::clone(this)));
         }
-        warn!("{:?} out of QuadTree boundary", entity);
-    }
-
-    fn insert_omit_children_inner(
-        this: &ArcNode<N, K>,
-        entity: Entity,
-        shape: Box<dyn DynCollision>,
-        changed: &mut Vec<(Entity, ArcNode<N, K>)>,
-    ) {
-        let this_r = this.read();
-        match shape.detect(this_r.inlet_boundary) {
-            Relation::Overlap | Relation::Disjoint | Relation::Contain => {
-                if let Some(p) = &this_r.parent {
-                    let p = Arc::clone(p);
-                    drop(this_r);
-                    Self::insert_inner(&p, entity, shape, changed);
-                    return;
-                }
-            }
-            Relation::Contained => {}
-        }
-        drop(this_r);
-        let mut this_w = this.write();
-        this_w.entities.insert(entity, shape);
-        changed.push((entity, Arc::clone(this)));
     }
 
     fn divide_inner(this: &ArcNode<N, K>, changed: &mut Vec<(Entity, ArcNode<N, K>)>) {
@@ -204,6 +230,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
                         max: this_r.inlet_boundary.min + MAX[i] * delta,
                     },
                     Arc::clone(this),
+                    i as i8,
                 )))
             })
         };
@@ -212,7 +239,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
         let drain = this_w.entities.drain().collect::<Vec<_>>();
         drop(this_w);
         for (entity, shape) in drain.into_iter() {
-            Self::insert_inner(this, entity, shape, changed);
+            Self::insert_inner(this, entity, shape, changed, &[]);
         }
     }
 
