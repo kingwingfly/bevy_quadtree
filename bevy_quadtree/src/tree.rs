@@ -77,6 +77,7 @@ mod tests {
         let tree: QuadTree<2, 4, 4> = QuadTree::default();
         let mut rng = ChaCha8Rng::seed_from_u64(0);
         assert_eq!(tree.len(), 0);
+        // (0, 0) r = 1
         tree.insert(
             Entity::PLACEHOLDER,
             CollisionCircle {
@@ -85,17 +86,21 @@ mod tests {
             },
         );
         assert_eq!(tree.len(), 1);
+        // overwrites the previous entity
+        // (0, 0) 1x1
         tree.insert(
             Entity::PLACEHOLDER,
             CollisionRect::from(Rect::from_center_size(Vec2::ZERO, Vec2::ONE)),
         );
         assert_eq!(tree.len(), 1);
+        // (0, 0) 1x1
         tree.insert(
             Entity::from_raw(rng.gen()),
             CollisionRect::from(Rect::from_center_size(Vec2::ZERO, Vec2::ONE)),
         );
         assert_eq!(tree.len(), 2);
         assert!(tree.root.read().children.is_none());
+        // (1, 1) 1x1
         tree.insert(
             Entity::from_raw(rng.gen()),
             CollisionRect::from(Rect::from_center_size(Vec2::splat(1.), Vec2::ONE)),
@@ -109,6 +114,7 @@ mod tests {
             },
             1
         );
+        // (1, 1) 1x1
         tree.insert(
             Entity::from_raw(rng.gen()),
             CollisionRect::from(Rect::from_center_size(Vec2::splat(1.), Vec2::ONE)),
@@ -122,6 +128,52 @@ mod tests {
                 child.len()
             },
             2
-        )
+        );
+        // (0.5, 0.5) 0.2x0.2
+        tree.insert(
+            Entity::from_raw(rng.gen()),
+            CollisionRect::from(Rect::from_center_size(Vec2::splat(0.5), Vec2::splat(0.2))),
+        );
+        assert!(tree.root.read().children.is_some());
+        assert_eq!(tree.len(), 5);
+        assert_eq!(
+            {
+                let root = tree.root.read();
+                let child = root.children.as_ref().unwrap()[0].read();
+                assert_eq!(child.len(), 2);
+                assert!(child.children.is_some());
+                let child = child.children.as_ref().unwrap()[2].read();
+                child.len()
+            },
+            1
+        );
+        // update Entity::PLACEHOLDER from (0, 0) 1x1 to (1, 0) 1x1
+        tree.insert(
+            Entity::PLACEHOLDER,
+            CollisionRect::from(Rect::from_center_size(Vec2::new(1., 0.), Vec2::ONE)),
+        );
+        assert_eq!(tree.len(), 5);
+        assert_eq!(tree.root.read().len(), 2);
+        // update Entity::PLACEHOLDER from (1, 0) 1x1 to (0.5, 0.5) 0.2x0.3
+        tree.insert(
+            Entity::PLACEHOLDER,
+            CollisionRect::from(Rect::from_center_size(
+                Vec2::new(0.5, 0.5),
+                Vec2::new(0.2, 0.3),
+            )),
+        );
+        assert_eq!(tree.len(), 5);
+        assert_eq!(
+            {
+                let root = tree.root.read();
+                assert_eq!(root.len(), 1);
+                let child = root.children.as_ref().unwrap()[0].read();
+                assert_eq!(child.len(), 2);
+                assert!(child.children.is_some());
+                let child = child.children.as_ref().unwrap()[2].read();
+                child.len()
+            },
+            2
+        );
     }
 }

@@ -90,17 +90,20 @@ impl<const N: usize, const K: usize> Node<N, K> {
         shape: Box<dyn DynCollision>,
         changed: &mut Vec<(Entity, ArcNode<N, K>)>,
     ) {
+        this.write().entities.remove(&entity);
         let this_r = this.read();
         match shape.detect(this_r.outlet_boundary) {
             Relation::Disjoint | Relation::Contain => {
                 if let Some(p) = &this_r.parent {
                     let p = Arc::clone(p);
                     drop(this_r);
-                    this.write().entities.remove(&entity);
                     Self::insert_omit_children_inner(&p, entity, shape, changed);
                 }
             }
-            Relation::Overlap | Relation::Contained => drop(this_r),
+            Relation::Overlap | Relation::Contained => {
+                drop(this_r);
+                Self::insert_inner(this, entity, shape, changed);
+            }
         }
     }
 
