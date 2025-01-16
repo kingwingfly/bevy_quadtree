@@ -50,12 +50,12 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N,
     where
         S: DynCollision + 'static,
     {
-        let shape: Arc<dyn DynCollision> = Arc::new(shape);
+        let shape: Box<dyn DynCollision> = Box::new(shape);
         let new_node = {
             let entities = self.entities.read();
             match entities.get(&entity) {
-                Some(node) => Node::update(node, entity, Arc::clone(&shape)),
-                None => Node::insert(&self.root, entity, Arc::clone(&shape)),
+                Some(node) => Node::update(node, entity, shape),
+                None => Node::insert(&self.root, entity, shape),
             }
         };
         let mut entities = self.entities.write();

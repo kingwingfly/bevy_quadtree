@@ -12,7 +12,7 @@ use std::sync::Arc;
 pub type ArcNode<const N: usize, const K: usize> = Arc<RwLock<Node<N, K>>>;
 
 pub(crate) struct Node<const N: usize, const K: usize = 10> {
-    entities: EntityHashMap<Arc<dyn DynCollision>>,
+    entities: EntityHashMap<Box<dyn DynCollision>>,
     inlet_boundary: Rect,
     outlet_boundary: Rect,
     parent: Option<ArcNode<N, K>>,
@@ -67,7 +67,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
     pub(crate) fn update(
         this: &ArcNode<N, K>,
         entity: Entity,
-        shape: Arc<dyn DynCollision>,
+        shape: Box<dyn DynCollision>,
     ) -> Vec<(Entity, ArcNode<N, K>)> {
         let mut changed = vec![];
         Self::update_inner(this, entity, shape, &mut changed);
@@ -77,7 +77,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
     pub(crate) fn insert(
         this: &ArcNode<N, K>,
         entity: Entity,
-        shape: Arc<dyn DynCollision>,
+        shape: Box<dyn DynCollision>,
     ) -> Vec<(Entity, ArcNode<N, K>)> {
         let mut changed = vec![];
         Self::insert_inner(this, entity, shape, &mut changed);
@@ -87,7 +87,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
     fn update_inner(
         this: &ArcNode<N, K>,
         entity: Entity,
-        shape: Arc<dyn DynCollision>,
+        shape: Box<dyn DynCollision>,
         changed: &mut Vec<(Entity, ArcNode<N, K>)>,
     ) {
         let this_r = this.read();
@@ -107,7 +107,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
     fn insert_inner(
         this: &ArcNode<N, K>,
         entity: Entity,
-        shape: Arc<dyn DynCollision>,
+        shape: Box<dyn DynCollision>,
         changed: &mut Vec<(Entity, ArcNode<N, K>)>,
     ) {
         {
@@ -153,7 +153,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
     fn insert_omit_children_inner(
         this: &ArcNode<N, K>,
         entity: Entity,
-        shape: Arc<dyn DynCollision>,
+        shape: Box<dyn DynCollision>,
         changed: &mut Vec<(Entity, ArcNode<N, K>)>,
     ) {
         let this_r = this.read();
