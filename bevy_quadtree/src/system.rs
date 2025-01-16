@@ -13,12 +13,16 @@ pub(crate) fn update_collision<S>(
 
 pub(crate) fn update_quadtree<S, const N: usize, const W: usize, const H: usize, const K: usize>(
     tree: Res<QuadTree<N, W, H, K>>,
-    mut q: Query<(Entity, &S), Changed<GlobalTransform>>,
+    q: Query<(Entity, &S), Changed<GlobalTransform>>,
+    mut r: RemovedComponents<S>,
 ) where
     QuadTree<N, W, H, K>: Resource,
     S: Component + DynCollision + Clone,
 {
-    for (e, s) in q.iter_mut() {
+    q.par_iter().for_each(|(e, s)| {
         tree.insert(e, s.clone());
+    });
+    for e in r.read() {
+        tree.remove(&e);
     }
 }
