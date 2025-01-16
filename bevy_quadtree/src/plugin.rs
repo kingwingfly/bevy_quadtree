@@ -15,7 +15,7 @@ use bevy::prelude::*;
 /// `H`: The height of the root node boundary.
 /// The boundary's center is (0, 0).
 ///
-/// `K`: For `LooseQuadTree`, K / 10 = outlet_boundary / inlet_boundary. Set K to 10 by default and 20 is founded best.
+/// `K`: For `LooseQuadTree`, K / 10 = outlet_boundary / inlet_boundary. Set K to 10 by default and 20 is founded best. K >= 10.
 /// # Example
 /// ```no_run
 /// use bevy::prelude::*;
