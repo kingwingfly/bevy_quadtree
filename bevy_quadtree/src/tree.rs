@@ -1,6 +1,6 @@
 use crate::{
     node::{ArcNode, Node},
-    Disassemble, DynCollision, QRelation, Relation,
+    Disassemble, DynCollision, QRelation,
 };
 use bevy::{ecs::entity::EntityHashMap, prelude::*};
 use core::fmt;
