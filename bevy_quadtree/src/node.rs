@@ -257,8 +257,23 @@ impl<const N: usize, const K: usize> Node<N, K> {
         }
     }
 
-    pub(crate) fn remove(&mut self, entity: &Entity) {
-        self.entities.remove(entity);
+    pub(crate) fn remove(this: &ArcNode<N, K>, entity: &Entity) {
+        {
+            let mut this_w = this.write();
+            this_w.entities.remove(entity);
+        }
+        let this_r = this.read();
+        if let Some(p) = this_r.parent.as_ref() {
+            let mut p = p.write();
+            if p.children
+                .as_ref()
+                .unwrap()
+                .iter()
+                .all(|c| c.read().len() == 0)
+            {
+                p.children = None;
+            }
+        }
     }
 
     pub(crate) fn query<S>(&self, boundary: S, relation: Relation) -> Vec<Entity>

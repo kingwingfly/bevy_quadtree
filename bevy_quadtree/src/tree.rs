@@ -66,7 +66,7 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N,
 
     pub(crate) fn remove(&self, entity: &Entity) {
         if let Some(node) = self.entities.write().remove(entity) {
-            node.write().remove(entity);
+            Node::remove(&node, entity);
         }
     }
 }
@@ -182,6 +182,48 @@ mod tests {
             assert_eq!(child.len(), 2);
             let child = root.children.as_ref().unwrap()[3].read();
             assert_eq!(child.len(), 1);
+        }
+        // remove Entity::PLACEHOLDER
+        tree.remove(&Entity::PLACEHOLDER);
+        assert_eq!(tree.len(), 4);
+        {
+            let root = tree.root.read();
+            assert_eq!(root.len(), 1);
+            let child = root.children.as_ref().unwrap()[0].read();
+            assert_eq!(child.len(), 2);
+            let child = root.children.as_ref().unwrap()[3].read();
+            assert_eq!(child.len(), 0);
+        }
+        // Test merge after remove
+        tree.insert(
+            Entity::from_raw(rng.gen()),
+            CollisionRect::from(Rect::from_center_size(
+                Vec2::splat(-1.),
+                Vec2::new(0.2, 0.3),
+            )),
+        );
+        tree.insert(
+            Entity::from_raw(rng.gen()),
+            CollisionRect::from(Rect::from_center_size(
+                Vec2::splat(-1.),
+                Vec2::new(0.2, 0.3),
+            )),
+        );
+        tree.insert(
+            Entity::PLACEHOLDER,
+            CollisionRect::from(Rect::from_center_size(
+                Vec2::splat(-0.5),
+                Vec2::new(0.2, 0.3),
+            )),
+        );
+        tree.remove(&Entity::PLACEHOLDER);
+        assert_eq!(tree.len(), 6);
+        {
+            let root = tree.root.read();
+            assert_eq!(root.len(), 1);
+            let child = root.children.as_ref().unwrap()[2].read();
+            assert_eq!(child.len(), 2);
+            assert!(child.children.is_none());
         }
     }
 }
