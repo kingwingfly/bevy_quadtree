@@ -110,13 +110,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
                     let p = Arc::clone(p);
                     drop(this_r);
                     this.write().entities.remove(&entity);
-                    Self::insert_inner(
-                        &p,
-                        entity,
-                        shape,
-                        changed,
-                        &mut vec![Pos::I, Pos::II, Pos::III, Pos::IV, Pos::C],
-                    );
+                    Self::insert_inner(&p, entity, shape, changed, &mut UNLESS_PARENT.to_vec());
                 }
             }
             Relation::Disjoint => {
@@ -145,11 +139,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
         changed: &mut Vec<(Entity, ArcNode<N, K>)>,
         omit: &mut Vec<Pos>,
     ) {
-        if [Pos::I, Pos::II, Pos::III, Pos::IV]
-            .iter()
-            .any(|p| !omit.contains(p))
-            && !omit.contains(&Pos::C)
-        {
+        if ALL_CHILDREN.iter().any(|p| !omit.contains(p)) && !omit.contains(&Pos::C) {
             {
                 let this_r = this.read();
                 if this_r.children.is_none() {
@@ -158,7 +148,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
                         Self::divide_inner(this, changed);
                     } else {
                         drop(this_r);
-                        omit.extend([Pos::I, Pos::II, Pos::III, Pos::IV]);
+                        omit.extend(ALL_CHILDREN);
                         Self::insert_inner(this, entity, shape, changed, omit);
                         return;
                     }
@@ -176,7 +166,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
                     Relation::Overlap | Relation::Contain => {
                         drop(node_r);
                         drop(this_r);
-                        omit.extend([Pos::I, Pos::II, Pos::III, Pos::IV]);
+                        omit.extend(ALL_CHILDREN);
                         Self::insert_inner(this, entity, shape, changed, omit);
                         return;
                     }
@@ -213,7 +203,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
                                 entity,
                                 shape,
                                 changed,
-                                &mut vec![Pos::I, Pos::II, Pos::III, Pos::IV, Pos::C],
+                                &mut UNLESS_PARENT.to_vec(),
                             );
                             return;
                         }
@@ -303,6 +293,9 @@ enum Pos {
     /// Root
     O,
 }
+
+const ALL_CHILDREN: [Pos; 4] = [Pos::I, Pos::II, Pos::III, Pos::IV];
+const UNLESS_PARENT: [Pos; 5] = [Pos::I, Pos::II, Pos::III, Pos::IV, Pos::C];
 
 impl From<usize> for Pos {
     fn from(pos: usize) -> Self {
