@@ -248,5 +248,37 @@ mod tests {
             QRelation::Overlap,
         );
         assert_eq!(q.len(), 4);
+        let q = tree.query(
+            &CollisionCircle {
+                center: Vec2::ZERO,
+                radius: 2.,
+            },
+            QRelation::OverlapOrContain,
+        );
+        assert_eq!(q.len(), 6);
+        let q = tree.query(
+            &CollisionCircle {
+                center: Vec2::new(0.5, 0.5),
+                radius: 1.,
+            },
+            QRelation::Disjoint,
+        );
+        assert_eq!(q.len(), 2);
+        let q = tree.query(
+            &CollisionCircle {
+                center: Vec2::new(0.5, 0.5),
+                radius: 1.,
+            },
+            QRelation::Contain,
+        );
+        assert_eq!(q.len(), 1);
+        let q = tree.query(
+            &CollisionCircle {
+                center: Vec2::ONE,
+                radius: 0.4,
+            },
+            QRelation::Contained,
+        );
+        assert_eq!(q.len(), 2);
     }
 }
