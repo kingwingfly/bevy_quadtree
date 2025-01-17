@@ -23,7 +23,7 @@ pub(crate) struct Node<const N: usize, const K: usize = 10> {
 impl<const N: usize, const K: usize> fmt::Debug for Node<N, K> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Node")
-            .field("entities", &self.len())
+            .field("entities", &self.total())
             .field("quadrant", &self.quadrant)
             .field("parent", &self.parent.is_some())
             .field("inlet_boundary", &self.inlet_boundary)
@@ -75,10 +75,14 @@ impl<const N: usize, const K: usize> Node<N, K> {
 
     pub(crate) fn len(&self) -> usize {
         self.entities.len()
+    }
+
+    pub(crate) fn total(&self) -> usize {
+        self.entities.len()
             + self
                 .children
                 .as_ref()
-                .map_or(0, |c| c.iter().map(|n| n.read().len()).sum())
+                .map_or(0, |c| c.iter().map(|n| n.read().total()).sum())
     }
 
     pub(crate) fn update(
@@ -147,7 +151,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
             {
                 let this_r = this.read();
                 if this_r.children.is_none() {
-                    if this_r.len() >= N {
+                    if this_r.total() >= N {
                         drop(this_r);
                         Self::divide_inner(this, changed);
                     } else {
@@ -271,7 +275,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
 
     fn merge_up(this: &ArcNode<N, K>) {
         let this_r = this.read();
-        if this_r.len() != 0 {
+        if this_r.len() != 0 && this_r.total() != 0 {
             return;
         }
         if let Some(p) = this_r.parent.as_ref() {
@@ -281,7 +285,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
                 .as_ref()
                 .unwrap()
                 .iter()
-                .all(|c| c.read().len() == 0)
+                .all(|c| c.read().total() == 0)
             {
                 p_w.children = None;
                 drop(p_w);
