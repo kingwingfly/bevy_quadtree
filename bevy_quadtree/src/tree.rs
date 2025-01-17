@@ -1,6 +1,6 @@
 use crate::{
     node::{ArcNode, Node},
-    DynCollision,
+    DynCollision, Relation,
 };
 use bevy::{ecs::entity::EntityHashMap, prelude::*};
 use core::fmt;
@@ -68,6 +68,14 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N,
         if let Some(node) = self.entities.write().remove(entity) {
             Node::remove(&node, entity);
         }
+    }
+
+    /// Query the entities in the boundary with the given relation.
+    pub fn query<S>(&self, boundary: &S, relation: Relation) -> Vec<Entity>
+    where
+        S: DynCollision,
+    {
+        Node::query(&self.root, boundary, relation)
     }
 }
 
@@ -139,7 +147,7 @@ mod tests {
         {
             let root = tree.root.read();
             let child = root.children.as_ref().unwrap()[0].read();
-            assert_eq!(child.len(), 2);
+            assert_eq!(child.len(), 3);
             assert!(child.children.is_some());
             let child = child.children.as_ref().unwrap()[2].read();
             assert_eq!(child.len(), 1);
@@ -150,7 +158,7 @@ mod tests {
             CollisionRect::from(Rect::from_center_size(Vec2::new(1., 0.), Vec2::ONE)),
         );
         assert_eq!(tree.len(), 5);
-        assert_eq!(tree.root.read().len(), 2);
+        assert_eq!(tree.root.read().len(), 5);
         // update Entity::PLACEHOLDER from (1, 0) 1x1 to (0.5, 0.5) 0.2x0.3
         tree.insert(
             Entity::PLACEHOLDER,
@@ -162,9 +170,9 @@ mod tests {
         assert_eq!(tree.len(), 5);
         {
             let root = tree.root.read();
-            assert_eq!(root.len(), 1);
+            assert_eq!(root.len(), 5);
             let child = root.children.as_ref().unwrap()[0].read();
-            assert_eq!(child.len(), 2);
+            assert_eq!(child.len(), 4);
             assert!(child.children.is_some());
             let child = child.children.as_ref().unwrap()[2].read();
             assert_eq!(child.len(), 2);
@@ -177,9 +185,9 @@ mod tests {
         assert_eq!(tree.len(), 5);
         {
             let root = tree.root.read();
-            assert_eq!(root.len(), 1);
+            assert_eq!(root.len(), 5);
             let child = root.children.as_ref().unwrap()[0].read();
-            assert_eq!(child.len(), 2);
+            assert_eq!(child.len(), 3);
             let child = root.children.as_ref().unwrap()[3].read();
             assert_eq!(child.len(), 1);
         }
@@ -188,9 +196,9 @@ mod tests {
         assert_eq!(tree.len(), 4);
         {
             let root = tree.root.read();
-            assert_eq!(root.len(), 1);
+            assert_eq!(root.len(), 4);
             let child = root.children.as_ref().unwrap()[0].read();
-            assert_eq!(child.len(), 2);
+            assert_eq!(child.len(), 3);
             let child = root.children.as_ref().unwrap()[3].read();
             assert_eq!(child.len(), 0);
         }
@@ -220,7 +228,7 @@ mod tests {
         assert_eq!(tree.len(), 6);
         {
             let root = tree.root.read();
-            assert_eq!(root.len(), 1);
+            assert_eq!(root.len(), 6);
             let child = root.children.as_ref().unwrap()[2].read();
             assert_eq!(child.len(), 2);
             assert!(child.children.is_none());

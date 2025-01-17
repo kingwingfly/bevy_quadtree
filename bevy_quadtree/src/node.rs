@@ -75,6 +75,10 @@ impl<const N: usize, const K: usize> Node<N, K> {
 
     pub(crate) fn len(&self) -> usize {
         self.entities.len()
+            + self
+                .children
+                .as_ref()
+                .map_or(0, |c| c.iter().map(|n| n.read().len()).sum())
     }
 
     pub(crate) fn update(
@@ -262,34 +266,111 @@ impl<const N: usize, const K: usize> Node<N, K> {
             let mut this_w = this.write();
             this_w.entities.remove(entity);
         }
+        Self::merge_up(this);
+    }
+
+    fn merge_up(this: &ArcNode<N, K>) {
         let this_r = this.read();
+        if this_r.len() != 0 {
+            return;
+        }
         if let Some(p) = this_r.parent.as_ref() {
-            let mut p = p.write();
-            if p.children
+            let mut p_w = p.write();
+            if p_w
+                .children
                 .as_ref()
                 .unwrap()
                 .iter()
                 .all(|c| c.read().len() == 0)
             {
-                p.children = None;
+                p_w.children = None;
+                drop(p_w);
+                Self::merge_up(p);
             }
         }
     }
 
-    pub(crate) fn query<S>(&self, boundary: S, relation: Relation) -> Vec<Entity>
+    pub(crate) fn query<S>(this: &ArcNode<N, K>, boundary: &S, relation: Relation) -> Vec<Entity>
     where
-        S: AsCollision,
+        S: DynCollision,
     {
         let mut res = vec![];
-        self.query_inner(boundary, relation, &mut res);
+        Node::query_inner(this, boundary, relation, &mut res);
         res
     }
 
-    fn query_inner<S>(&self, boundary: S, relation: Relation, res: &mut Vec<Entity>)
+    fn query_inner<S>(this: &ArcNode<N, K>, boundary: &S, relation: Relation, res: &mut Vec<Entity>)
     where
-        S: AsCollision,
+        S: DynCollision,
     {
-        todo!()
+        match relation {
+            Relation::Disjoint => Node::query_disjoint(this, boundary, res),
+            Relation::Overlap => Node::query_overlap(this, boundary, res),
+            Relation::Contain => Node::query_contain(this, boundary, res),
+            Relation::Contained => Node::query_contained(this, boundary, res),
+        }
+    }
+
+    fn query_all(this: &ArcNode<N, K>, res: &mut Vec<Entity>) {
+        let this_r = this.read();
+        res.extend(this_r.entities.keys().cloned());
+        if let Some(children) = &this_r.children {
+            for child in children.iter() {
+                Self::query_all(child, res);
+            }
+        }
+    }
+
+    fn query_disjoint<S>(this: &ArcNode<N, K>, boundary: &S, res: &mut Vec<Entity>)
+    where
+        S: DynCollision,
+    {
+        let this_r = this.read();
+        match boundary.detect(this_r.outlet_boundary) {
+            Relation::Disjoint => {}
+            Relation::Overlap => todo!(),
+            Relation::Contain => todo!(),
+            Relation::Contained => todo!(),
+        }
+    }
+
+    fn query_overlap<S>(this: &ArcNode<N, K>, boundary: &S, res: &mut Vec<Entity>)
+    where
+        S: DynCollision,
+    {
+        let this_r = this.read();
+        match boundary.detect(this_r.outlet_boundary) {
+            Relation::Disjoint => todo!(),
+            Relation::Overlap => todo!(),
+            Relation::Contain => todo!(),
+            Relation::Contained => todo!(),
+        }
+    }
+
+    fn query_contain<S>(this: &ArcNode<N, K>, boundary: &S, res: &mut Vec<Entity>)
+    where
+        S: DynCollision,
+    {
+        let this_r = this.read();
+        match boundary.detect(this_r.outlet_boundary) {
+            Relation::Disjoint => todo!(),
+            Relation::Overlap => todo!(),
+            Relation::Contain => todo!(),
+            Relation::Contained => todo!(),
+        }
+    }
+
+    fn query_contained<S>(this: &ArcNode<N, K>, boundary: &S, res: &mut Vec<Entity>)
+    where
+        S: DynCollision,
+    {
+        let this_r = this.read();
+        match boundary.detect(this_r.outlet_boundary) {
+            Relation::Disjoint => todo!(),
+            Relation::Overlap => todo!(),
+            Relation::Contain => todo!(),
+            Relation::Contained => todo!(),
+        }
     }
 }
 
