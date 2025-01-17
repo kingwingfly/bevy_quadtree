@@ -53,7 +53,7 @@ impl<T> DynCollision for T where
 {
 }
 
-/// Marker trait for `S: DynCollision + Component` and tuple of `S`s
+/// Marker trait for [`S: DynCollision + Component`](crate::DynCollision) and tuple of `S`s
 pub trait AsCollision {}
 
 impl<T> AsCollision for T where T: DynCollision + UpdateCollision + Component + Clone {}
@@ -78,27 +78,27 @@ impl_as_collision!(S1, S2, S3, S4, S5, S6, S7);
 impl_as_collision!(S1, S2, S3, S4, S5, S6, S7, S8);
 impl_as_collision!(S1, S2, S3, S4, S5, S6, S7, S8, S9);
 
-/// Update the position of the shape during Update and before Collision Detection.
+/// Update the attributes of the shape during PreUpdate stage and before Collision Detection.
 pub trait UpdateCollision {
-    /// Set the position of the shape. Used for updating the position of the shape
+    /// Set the attributes of the shape. Used for updating the position of the shape
     /// in `PreUpdate` stage when `GlobalTransform` changed.
     fn update() -> impl FnOnce(&mut Self, &GlobalTransform);
 }
 
-/// Disassemble the boundary as `Rect`s and `CollisionCircle`s as query boundary
-/// Pay attention to the default implementation of `Disassemble::detect()` when implementing your own.
+/// Disassemble the boundary as [`CollisionRect`]s and [`CollisionCircle`]s as query boundary
+/// Pay attention to the default implementation of [`Disassemble::detect`] when implementing your own.
 pub trait Disassemble {
-    /// Disassemble the shape as `Rect` and `CollisionCircle` as query boundary.
+    /// Disassemble the shape as [`CollisionRect`](crate::CollisionRect) and [`CollisionCircle`](crate::CollisionCircle) as query boundary.
     fn disassemble(&self) -> (Vec<&CollisionRect>, Vec<&CollisionCircle>);
     /// Detect the relation between the boundary and the given object.
-    /// The default `Disassemble::detect()` impletation:
+    /// The default `Disassemble::detect` impletation:
     ///
-    /// Relation::Contain if any of the boundary completely contains the object.
+    /// Relation::Contain if any of the boundaries completely contains the object.
     ///
-    /// Relation::Contained if all of the boundary is completely contained by the object.
+    /// Relation::Contained if all of the boundaries are completely contained by the object.
     ///
-    /// Relation::Overlap if any of the boundary overlaps the object
-    /// or not all of the boundary is contained by the object.
+    /// Relation::Overlap if any of the boundaries overlaps the object
+    /// or not all of the boundaries are contained by the object.
     ///
     /// Relation::Disjoint otherwise.
     fn detect(&self, obj: &dyn DynCollision) -> Relation {

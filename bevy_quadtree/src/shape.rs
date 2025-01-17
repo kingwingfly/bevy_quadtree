@@ -1,7 +1,7 @@
 use crate::{Collision, Disassemble, Relation, UpdateCollision};
 use bevy::prelude::*;
 
-/// Circle shape implemented `AsCollision` trait to be used in the QuadTreePlugin
+/// Circle shape implemented [`AsCollision`](crate::AsCollision) trait to be used in the QuadTreePlugin
 /// and as a Component in the ECS
 ///
 /// # Panic
@@ -72,7 +72,7 @@ impl Disassemble for CollisionCircle {
     }
 }
 
-/// Rectagle shape implemented `AsCollision` trait to be used in the QuadTreePlugin
+/// Rectagle shape implemented [`AsCollision`](crate::AsCollision) trait to be used in the QuadTreePlugin
 /// and as a Component in the ECS
 ///
 /// # Panic

@@ -70,7 +70,9 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N,
         }
     }
 
-    /// Query the entities in the boundary with the given relation.
+    /// Query the entities within the given relation with the boundary [`S: Disassemble`](crate::Disassemble),
+    /// such as [`CollisionRect`](crate::CollisionRect), [`CollisionCircle`](crate::CollisionCircle) and tuple/array of them.
+    /// The rule of the relation is defined in [`Disassemble::detect`](crate::Disassemble::detect) and [`QRelation`](crate::QRelation).
     pub fn query<S>(&self, boundary: &S, relation: QRelation) -> Vec<Entity>
     where
         S: Disassemble,
