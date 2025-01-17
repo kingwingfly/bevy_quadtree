@@ -18,7 +18,7 @@ pub enum Relation {
     Contained,
 }
 
-/// Represents the relation between two shapes. Used in [`QuadTree::query()`] only.
+/// Represents the relation between two shapes. Used in [`QuadTree::query`](crate::QuadTree::query) only.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum QRelation {
     /// `a` disjoints `b`
@@ -31,7 +31,7 @@ pub enum QRelation {
     Contained,
     /// `a` overlaps or completely contains `b`, `b` is in `a` and smaller if contains.
     ///
-    /// This should be **only** used in [`QuadTree::query()`]
+    /// This should be **only** used in [`QuadTree::query`](crate::QuadTree::query)
     OverlapOrContain,
 }
 
