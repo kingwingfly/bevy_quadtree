@@ -1,4 +1,4 @@
-use crate::{AsCollision, DynCollision, Relation};
+use crate::{CollisionRect, Disassemble, DynCollision, QRelation, Relation};
 use bevy::{
     ecs::entity::EntityHashMap,
     log::warn,
@@ -13,8 +13,8 @@ pub type ArcNode<const N: usize, const K: usize> = Arc<RwLock<Node<N, K>>>;
 
 pub(crate) struct Node<const N: usize, const K: usize = 10> {
     entities: EntityHashMap<Box<dyn DynCollision>>,
-    inlet_boundary: Rect,
-    outlet_boundary: Rect,
+    inlet_boundary: CollisionRect,
+    outlet_boundary: CollisionRect,
     parent: Option<ArcNode<N, K>>,
     pub(crate) children: Option<[ArcNode<N, K>; 4]>,
     quadrant: Pos,
@@ -34,14 +34,16 @@ impl<const N: usize, const K: usize> fmt::Debug for Node<N, K> {
 }
 
 impl<const N: usize, const K: usize> Node<N, K> {
+    #[allow(unused)]
     fn from(boundary: Rect, quadrant: Pos) -> Self {
         Self {
             entities: EntityHashMap::default(),
-            inlet_boundary: boundary,
+            inlet_boundary: boundary.into(),
             outlet_boundary: Rect::from_center_size(
                 boundary.center(),
                 boundary.size() * const { K as f32 / 10. },
-            ),
+            )
+            .into(),
             parent: None,
             children: None,
             quadrant,
@@ -51,8 +53,8 @@ impl<const N: usize, const K: usize> Node<N, K> {
     pub(crate) fn root(boundary: Rect) -> Self {
         Self {
             entities: EntityHashMap::default(),
-            inlet_boundary: boundary,
-            outlet_boundary: boundary,
+            inlet_boundary: boundary.into(),
+            outlet_boundary: boundary.into(),
             parent: None,
             children: None,
             quadrant: Pos::O,
@@ -62,11 +64,12 @@ impl<const N: usize, const K: usize> Node<N, K> {
     fn new_with_parent(boundary: Rect, parent: ArcNode<N, K>, quadrant: Pos) -> Self {
         Self {
             entities: EntityHashMap::default(),
-            inlet_boundary: boundary,
+            inlet_boundary: boundary.into(),
             outlet_boundary: Rect::from_center_size(
                 boundary.center(),
                 boundary.size() * const { K as f32 / 10. },
-            ),
+            )
+            .into(),
             parent: Some(parent),
             children: None,
             quadrant,
@@ -112,7 +115,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
         changed: &mut Vec<(Entity, ArcNode<N, K>)>,
     ) {
         let this_r = this.read();
-        match shape.detect(this_r.outlet_boundary) {
+        match shape.detect(&this_r.outlet_boundary) {
             Relation::Contain => {
                 if let Some(p) = &this_r.parent {
                     let p = Arc::clone(p);
@@ -129,7 +132,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
                     Self::insert_inner(p, entity, shape, changed, &mut vec![quadrant]);
                 }
             }
-            Relation::Overlap | Relation::Contained => match shape.detect(this_r.inlet_boundary) {
+            Relation::Overlap | Relation::Contained => match shape.detect(&this_r.inlet_boundary) {
                 Relation::Disjoint | Relation::Overlap | Relation::Contain => {}
                 Relation::Contained => {
                     drop(this_r);
@@ -169,7 +172,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
                     continue;
                 }
                 let node_r = node.read();
-                match shape.detect(node_r.inlet_boundary) {
+                match shape.detect(&node_r.inlet_boundary) {
                     Relation::Disjoint => {}
                     Relation::Overlap | Relation::Contain => {
                         drop(node_r);
@@ -197,7 +200,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
             if !omit.contains(&Pos::P) {
                 let this_r = this.read();
                 if let Some(p) = this_r.parent.clone() {
-                    match shape.detect(this_r.inlet_boundary) {
+                    match shape.detect(&this_r.inlet_boundary) {
                         Relation::Overlap | Relation::Disjoint => {
                             let quadrant = this_r.quadrant;
                             drop(this_r);
@@ -294,24 +297,29 @@ impl<const N: usize, const K: usize> Node<N, K> {
         }
     }
 
-    pub(crate) fn query<S>(this: &ArcNode<N, K>, boundary: &S, relation: Relation) -> Vec<Entity>
+    pub(crate) fn query<S>(this: &ArcNode<N, K>, boundary: &S, relation: QRelation) -> Vec<Entity>
     where
-        S: DynCollision,
+        S: Disassemble,
     {
         let mut res = vec![];
         Node::query_inner(this, boundary, relation, &mut res);
         res
     }
 
-    fn query_inner<S>(this: &ArcNode<N, K>, boundary: &S, relation: Relation, res: &mut Vec<Entity>)
-    where
-        S: DynCollision,
+    fn query_inner<S>(
+        this: &ArcNode<N, K>,
+        boundary: &S,
+        relation: QRelation,
+        res: &mut Vec<Entity>,
+    ) where
+        S: Disassemble,
     {
         match relation {
-            Relation::Disjoint => Node::query_disjoint(this, boundary, res),
-            Relation::Overlap => Node::query_overlap(this, boundary, res),
-            Relation::Contain => Node::query_contain(this, boundary, res),
-            Relation::Contained => Node::query_contained(this, boundary, res),
+            QRelation::Disjoint => Node::query_disjoint(this, boundary, res),
+            QRelation::Overlap => Node::query_overlap(this, boundary, res),
+            QRelation::Contain => Node::query_contain(this, boundary, res),
+            QRelation::Contained => Node::query_contained(this, boundary, res),
+            QRelation::OverlapOrContain => Node::query_overlap_or_contain(this, boundary, res),
         }
     }
 
@@ -327,53 +335,117 @@ impl<const N: usize, const K: usize> Node<N, K> {
 
     fn query_disjoint<S>(this: &ArcNode<N, K>, boundary: &S, res: &mut Vec<Entity>)
     where
-        S: DynCollision,
+        S: Disassemble,
     {
         let this_r = this.read();
-        match boundary.detect(this_r.outlet_boundary) {
-            Relation::Disjoint => {}
-            Relation::Overlap => todo!(),
-            Relation::Contain => todo!(),
-            Relation::Contained => todo!(),
+        match boundary.detect(&this_r.outlet_boundary) {
+            Relation::Disjoint => {
+                Self::query_all(this, res);
+            }
+            Relation::Overlap | Relation::Contained => {
+                for (entity, shape) in this_r.entities.iter() {
+                    if boundary.detect(shape.as_ref()) == Relation::Disjoint {
+                        res.push(*entity);
+                    }
+                }
+                if let Some(children) = &this_r.children {
+                    for child in children.iter() {
+                        Self::query_disjoint(child, boundary, res);
+                    }
+                }
+            }
+            Relation::Contain => {}
         }
     }
 
     fn query_overlap<S>(this: &ArcNode<N, K>, boundary: &S, res: &mut Vec<Entity>)
     where
-        S: DynCollision,
+        S: Disassemble,
     {
         let this_r = this.read();
-        match boundary.detect(this_r.outlet_boundary) {
-            Relation::Disjoint => todo!(),
-            Relation::Overlap => todo!(),
-            Relation::Contain => todo!(),
-            Relation::Contained => todo!(),
+        match boundary.detect(&this_r.outlet_boundary) {
+            Relation::Disjoint => {}
+            Relation::Overlap | Relation::Contained | Relation::Contain => {
+                for (entity, shape) in this_r.entities.iter() {
+                    if boundary.detect(shape.as_ref()) == Relation::Overlap {
+                        res.push(*entity);
+                    }
+                }
+                if let Some(children) = &this_r.children {
+                    for child in children.iter() {
+                        Self::query_overlap(child, boundary, res);
+                    }
+                }
+            }
         }
     }
 
     fn query_contain<S>(this: &ArcNode<N, K>, boundary: &S, res: &mut Vec<Entity>)
     where
-        S: DynCollision,
+        S: Disassemble,
     {
         let this_r = this.read();
-        match boundary.detect(this_r.outlet_boundary) {
-            Relation::Disjoint => todo!(),
-            Relation::Overlap => todo!(),
-            Relation::Contain => todo!(),
-            Relation::Contained => todo!(),
+        match boundary.detect(&this_r.outlet_boundary) {
+            Relation::Disjoint => {}
+            Relation::Overlap | Relation::Contain | Relation::Contained => {
+                for (entity, shape) in this_r.entities.iter() {
+                    if boundary.detect(shape.as_ref()) == Relation::Contain {
+                        res.push(*entity);
+                    }
+                }
+                if let Some(children) = &this_r.children {
+                    for child in children.iter() {
+                        Self::query_contain(child, boundary, res);
+                    }
+                }
+            }
         }
     }
 
     fn query_contained<S>(this: &ArcNode<N, K>, boundary: &S, res: &mut Vec<Entity>)
     where
-        S: DynCollision,
+        S: Disassemble,
     {
         let this_r = this.read();
-        match boundary.detect(this_r.outlet_boundary) {
-            Relation::Disjoint => todo!(),
-            Relation::Overlap => todo!(),
-            Relation::Contain => todo!(),
-            Relation::Contained => todo!(),
+        match boundary.detect(&this_r.outlet_boundary) {
+            Relation::Disjoint | Relation::Contain => {}
+            Relation::Overlap | Relation::Contained => {
+                for (entity, shape) in this_r.entities.iter() {
+                    if boundary.detect(shape.as_ref()) == Relation::Contained {
+                        res.push(*entity);
+                    }
+                }
+                if let Some(children) = &this_r.children {
+                    for child in children.iter() {
+                        Self::query_contained(child, boundary, res);
+                    }
+                }
+            }
+        }
+    }
+
+    fn query_overlap_or_contain<S>(this: &ArcNode<N, K>, boundary: &S, res: &mut Vec<Entity>)
+    where
+        S: Disassemble,
+    {
+        let this_r = this.read();
+        match boundary.detect(&this_r.outlet_boundary) {
+            Relation::Disjoint => {}
+            Relation::Overlap | Relation::Contain | Relation::Contained => {
+                for (entity, shape) in this_r.entities.iter() {
+                    if matches!(
+                        boundary.detect(shape.as_ref()),
+                        Relation::Contain | Relation::Overlap
+                    ) {
+                        res.push(*entity);
+                    }
+                }
+                if let Some(children) = &this_r.children {
+                    for child in children.iter() {
+                        Self::query_overlap_or_contain(child, boundary, res);
+                    }
+                }
+            }
         }
     }
 }

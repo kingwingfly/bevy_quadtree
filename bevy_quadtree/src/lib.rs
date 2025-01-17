@@ -10,7 +10,9 @@ mod shape;
 mod system;
 mod tree;
 
-pub use collision::{AsCollision, Collision, DynCollision, Relation, UpdateCollision};
+pub use collision::{
+    AsCollision, Collision, Disassemble, DynCollision, QRelation, Relation, UpdateCollision,
+};
 pub use plugin::QuadTreePlugin;
 pub use shape::{CollisionCircle, CollisionRect};
 pub use tree::QuadTree;

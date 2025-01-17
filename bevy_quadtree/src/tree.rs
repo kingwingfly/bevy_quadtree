@@ -1,6 +1,6 @@
 use crate::{
     node::{ArcNode, Node},
-    DynCollision, Relation,
+    Disassemble, DynCollision, QRelation, Relation,
 };
 use bevy::{ecs::entity::EntityHashMap, prelude::*};
 use core::fmt;
@@ -71,9 +71,9 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N,
     }
 
     /// Query the entities in the boundary with the given relation.
-    pub fn query<S>(&self, boundary: &S, relation: Relation) -> Vec<Entity>
+    pub fn query<S>(&self, boundary: &S, relation: QRelation) -> Vec<Entity>
     where
-        S: DynCollision,
+        S: Disassemble,
     {
         Node::query(&self.root, boundary, relation)
     }
@@ -243,5 +243,10 @@ mod tests {
             assert_eq!(child.total(), 2);
             assert!(child.children.is_none());
         }
+        let q = tree.query(
+            &CollisionRect::from(Rect::from_center_size(Vec2::ZERO, Vec2::ONE)),
+            QRelation::Overlap,
+        );
+        assert_eq!(q.len(), 4);
     }
 }

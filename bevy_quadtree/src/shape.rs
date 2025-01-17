@@ -1,4 +1,4 @@
-use crate::{Collision, Relation, UpdateCollision};
+use crate::{Collision, Disassemble, Relation, UpdateCollision};
 use bevy::prelude::*;
 
 /// Circle shape implemented `AsCollision` trait to be used in the QuadTreePlugin
@@ -14,8 +14,8 @@ pub struct CollisionCircle {
     pub radius: f32,
 }
 
-impl Collision<Rect> for CollisionCircle {
-    fn detect(&self, rect: Rect) -> Relation {
+impl Collision<CollisionRect> for CollisionCircle {
+    fn detect(&self, rect: &CollisionRect) -> Relation {
         let i = rect.size() / 2.; // move rect center to origin and get vertex in Quadrant I
         let center = (self.center - rect.center()).abs(); // move circle with rect and symmetrize the circle to Quadrant I
         let ds = [
@@ -38,6 +38,21 @@ impl Collision<Rect> for CollisionCircle {
     }
 }
 
+impl Collision<CollisionCircle> for CollisionCircle {
+    fn detect(&self, circle: &CollisionCircle) -> Relation {
+        let d = (self.center - circle.center).length();
+        if d + circle.radius < self.radius {
+            Relation::Contain
+        } else if d + self.radius < circle.radius {
+            Relation::Contained
+        } else if d > self.radius + circle.radius {
+            Relation::Disjoint
+        } else {
+            Relation::Overlap
+        }
+    }
+}
+
 impl UpdateCollision for CollisionCircle {
     fn update() -> impl FnOnce(&mut Self, &GlobalTransform) {
         |circle, global_transform| {
@@ -48,6 +63,12 @@ impl UpdateCollision for CollisionCircle {
             );
             circle.radius *= global_transform.scale().x;
         }
+    }
+}
+
+impl Disassemble for CollisionCircle {
+    fn disassemble(&self) -> (Vec<&CollisionRect>, Vec<&CollisionCircle>) {
+        (Vec::new(), vec![self])
     }
 }
 
@@ -65,8 +86,8 @@ impl From<Rect> for CollisionRect {
     }
 }
 
-impl Collision<Rect> for CollisionRect {
-    fn detect(&self, rec: Rect) -> Relation {
+impl Collision<CollisionRect> for CollisionRect {
+    fn detect(&self, rec: &CollisionRect) -> Relation {
         if self.min.x < rec.min.x
             && self.min.y < rec.min.y
             && self.max.x > rec.max.x
@@ -91,6 +112,16 @@ impl Collision<Rect> for CollisionRect {
     }
 }
 
+impl Collision<CollisionCircle> for CollisionRect {
+    fn detect(&self, obj: &CollisionCircle) -> Relation {
+        match Collision::detect(obj, self) {
+            Relation::Contain => Relation::Contained,
+            Relation::Contained => Relation::Contain,
+            r => r,
+        }
+    }
+}
+
 impl UpdateCollision for CollisionRect {
     fn update() -> impl FnOnce(&mut Self, &GlobalTransform) {
         |rect, global_transform| {
@@ -104,5 +135,11 @@ impl UpdateCollision for CollisionRect {
                 rect.size() * global_transform.scale().truncate(),
             );
         }
+    }
+}
+
+impl Disassemble for CollisionRect {
+    fn disassemble(&self) -> (Vec<&CollisionRect>, Vec<&CollisionCircle>) {
+        (vec![self], Vec::new())
     }
 }
