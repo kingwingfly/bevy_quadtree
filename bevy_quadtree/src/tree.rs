@@ -94,13 +94,7 @@ mod tests {
         let mut rng = ChaCha8Rng::seed_from_u64(0);
         assert_eq!(tree.len(), 0);
         // (0, 0) r = 1
-        tree.insert(
-            Entity::PLACEHOLDER,
-            CollisionCircle {
-                center: Vec2::ZERO,
-                radius: 1.,
-            },
-        );
+        tree.insert(Entity::PLACEHOLDER, CollisionCircle::new(Vec2::ZERO, 1.));
         assert_eq!(tree.len(), 1);
         // overwrites the Entity::PLACEHOLDER
         // (0, 0) 1x1
@@ -251,36 +245,21 @@ mod tests {
         );
         assert_eq!(q.len(), 4);
         let q = tree.query(
-            &CollisionCircle {
-                center: Vec2::ZERO,
-                radius: 2.,
-            },
+            &CollisionCircle::new(Vec2::ZERO, 2.),
             QRelation::OverlapOrContain,
         );
         assert_eq!(q.len(), 6);
         let q = tree.query(
-            &CollisionCircle {
-                center: Vec2::new(0.5, 0.5),
-                radius: 1.,
-            },
+            &CollisionCircle::new(Vec2::splat(0.5), 1.),
             QRelation::Disjoint,
         );
         assert_eq!(q.len(), 2);
         let q = tree.query(
-            &CollisionCircle {
-                center: Vec2::new(0.5, 0.5),
-                radius: 1.,
-            },
+            &CollisionCircle::new(Vec2::splat(0.5), 1.),
             QRelation::Contain,
         );
         assert_eq!(q.len(), 1);
-        let q = tree.query(
-            &CollisionCircle {
-                center: Vec2::ONE,
-                radius: 0.4,
-            },
-            QRelation::Contained,
-        );
+        let q = tree.query(&CollisionCircle::new(Vec2::ONE, 0.4), QRelation::Contained);
         assert_eq!(q.len(), 2);
     }
 }

@@ -14,5 +14,5 @@ pub use collision::{
     AsCollision, Collision, Disassemble, DynCollision, QRelation, Relation, UpdateCollision,
 };
 pub use plugin::QuadTreePlugin;
-pub use shape::{CollisionCircle, CollisionRect};
+pub use shape::{CollisionCircle, CollisionRect, CollisionRotatedRect};
 pub use tree::QuadTree;

@@ -19,10 +19,10 @@ use bevy::prelude::*;
 /// # Example
 /// ```no_run
 /// use bevy::prelude::*;
-/// use bevy_quadtree::{CollisionCircle, CollisionRect, QuadTreePlugin};
+/// use bevy_quadtree::{CollisionCircle, CollisionRect, CollisionRotatedRect, QuadTreePlugin};
 ///
 /// let _ = App::new()
-///    .add_plugins(QuadTreePlugin::<(CollisionCircle, CollisionRect), 40, 100, 100, 20>::default())
+///    .add_plugins(QuadTreePlugin::<(CollisionCircle, CollisionRotatedRect, CollisionRect), 40, 100, 100, 20>::default())
 ///    .add_plugins(QuadTreePlugin::<CollisionCircle, 40, 100, 100>::default());
 /// ```
 #[derive(Debug)]

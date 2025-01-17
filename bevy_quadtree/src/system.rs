@@ -13,7 +13,7 @@ pub(crate) fn update_collision<S>(
 
 pub(crate) fn update_quadtree<S, const N: usize, const W: usize, const H: usize, const K: usize>(
     tree: Res<QuadTree<N, W, H, K>>,
-    q: Query<(Entity, &S), Changed<GlobalTransform>>,
+    q: Query<(Entity, &S), Changed<S>>,
     mut r: RemovedComponents<S>,
 ) where
     QuadTree<N, W, H, K>: Resource,

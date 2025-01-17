@@ -1,7 +1,7 @@
 use bevy::prelude::{Component, GlobalTransform};
 use paste::paste;
 
-use crate::{CollisionCircle, CollisionRect};
+use crate::{shape::CollisionRotatedRect, CollisionCircle, CollisionRect};
 
 /// The result of a bound check.
 /// # Example
@@ -44,12 +44,20 @@ pub trait Collision<S> {
 
 /// Object safe trait for storing value in QuadTree
 pub trait DynCollision:
-    Collision<CollisionRect> + Collision<CollisionCircle> + Send + Sync
+    Collision<CollisionRect>
+    + Collision<CollisionRotatedRect>
+    + Collision<CollisionCircle>
+    + Send
+    + Sync
 {
 }
 
 impl<T> DynCollision for T where
-    T: Collision<CollisionRect> + Collision<CollisionCircle> + Send + Sync
+    T: Collision<CollisionRect>
+        + Collision<CollisionRotatedRect>
+        + Collision<CollisionCircle>
+        + Send
+        + Sync
 {
 }
 
@@ -85,12 +93,21 @@ pub trait UpdateCollision {
     fn update() -> impl FnOnce(&mut Self, &GlobalTransform);
 }
 
-/// Disassemble the boundary as [`CollisionRect`]s and [`CollisionCircle`]s as query boundary
+/// Disassemble the boundary as [`CollisionRect`]s, [`CollisionRotatedRect`]s and [`CollisionCircle`]s as query boundary
 /// Pay attention to the default implementation of [`Disassemble::detect`] when implementing your own.
+/// However, disassemble the boundary as smaller possible shapes is recommended since it's easier.
+/// `Disassemble::disassemble` is called only in `Disassemble::detect`'s default implementation,
+/// so leave it `unreachable!()` if you have your own implementation of `Disassemble::detect`.
 pub trait Disassemble {
-    /// Disassemble the shape as [`CollisionRect`](crate::CollisionRect) and [`CollisionCircle`](crate::CollisionCircle) as query boundary.
-    fn disassemble(&self) -> (Vec<&CollisionRect>, Vec<&CollisionCircle>);
-    /// Detect the relation between the boundary and the given object.
+    /// Disassemble the shape as [`CollisionRect`], [`CollisionRotatedRect`] and [`CollisionCircle`] as query boundaries.
+    fn disassemble(
+        &self,
+    ) -> (
+        Vec<&CollisionRect>,
+        Vec<&CollisionRotatedRect>,
+        Vec<&CollisionCircle>,
+    );
+    /// Detect the relation between the boundary and the given object from the tree.
     /// The default `Disassemble::detect` impletation:
     ///
     /// Relation::Contain if any of the boundaries completely contains the object.
@@ -102,10 +119,18 @@ pub trait Disassemble {
     ///
     /// Relation::Disjoint otherwise.
     fn detect(&self, obj: &dyn DynCollision) -> Relation {
-        let (rects, circles) = self.disassemble();
+        let (rects, rotated_rects, circles) = self.disassemble();
         let mut relation = Relation::Contain;
         for rect in rects {
             match obj.detect(rect) {
+                Relation::Contain => return Relation::Contained,
+                Relation::Contained if relation == Relation::Contain => {}
+                Relation::Contained | Relation::Overlap => return Relation::Overlap,
+                Relation::Disjoint => relation = Relation::Disjoint,
+            }
+        }
+        for r_rect in rotated_rects {
+            match obj.detect(r_rect) {
                 Relation::Contain => return Relation::Contained,
                 Relation::Contained if relation == Relation::Contain => {}
                 Relation::Contained | Relation::Overlap => return Relation::Overlap,
@@ -128,15 +153,23 @@ impl<T> Disassemble for [T]
 where
     T: Disassemble,
 {
-    fn disassemble(&self) -> (Vec<&CollisionRect>, Vec<&CollisionCircle>) {
+    fn disassemble(
+        &self,
+    ) -> (
+        Vec<&CollisionRect>,
+        Vec<&CollisionRotatedRect>,
+        Vec<&CollisionCircle>,
+    ) {
         let mut rects = vec![];
+        let mut rotated_rects = vec![];
         let mut circles = vec![];
         for t in self {
-            let (r, c) = t.disassemble();
+            let (r, rr, c) = t.disassemble();
             rects.extend(r);
+            rotated_rects.extend(rr);
             circles.extend(c);
         }
-        (rects, circles)
+        (rects, rotated_rects, circles)
     }
 }
 
@@ -147,15 +180,23 @@ macro_rules! impl_disassemble {
             where
                 $([<S $i>]: Disassemble,)+
             {
-                fn disassemble(&self) -> (Vec<&CollisionRect>, Vec<&CollisionCircle>) {
+                fn disassemble(
+                    &self,
+                ) -> (
+                    Vec<&CollisionRect>,
+                    Vec<&CollisionRotatedRect>,
+                    Vec<&CollisionCircle>,
+                ) {
                     let mut rects = vec![];
+                    let mut rotated_rects = vec![];
                     let mut circles = vec![];
                     $(
-                        let (r, c) = self.$i.disassemble();
+                        let (r, rr, c) = self.$i.disassemble();
                         rects.extend(r);
+                        rotated_rects.extend(rr);
                         circles.extend(c);
                     )+
-                    (rects, circles)
+                    (rects, rotated_rects, circles)
                 }
             }
         }
