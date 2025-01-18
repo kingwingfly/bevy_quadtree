@@ -8,7 +8,9 @@ pub struct QOr<T>(core::marker::PhantomData<T>);
 /// `Not` filter used in `QuadTree::query`
 pub struct QNot<T>(core::marker::PhantomData<T>);
 
-/// implemented for [`Contain`], [`Contained`], [`Overlap`], [`Disjoint`], [`QOr`], [`QNot`] and tuple of them.
+/// implemented for [`Disjoint`], [`Overlap`], [`Contain`], [`Contained`], [`QOr`], [`QNot`] and tuple of them.
+///
+/// There is no `QAnd` because all the filters do not overlap, e.g. `QAnd<(Disjoint, Contain)>` is always empty.
 #[allow(missing_docs)]
 pub trait QRelation {
     fn filter<S, const N: usize, const K: usize>(
@@ -200,9 +202,9 @@ impl_or_relation!(R1, R2, R3, R4, R5, R6, R7, R8);
 impl_or_relation!(R1, R2, R3, R4, R5, R6, R7, R8, R9);
 
 macro_rules! impl_not_relation {
-    ($($t: ident), +) => {
+    ($($r: ident), +) => {
         $(
-            impl QRelation for QNot<$t> {
+            impl QRelation for QNot<$r> {
                 fn filter_inner<S, const N: usize, const K: usize>(
                     node: &ArcNode<N, K>,
                     boundary: &S,
@@ -211,9 +213,11 @@ macro_rules! impl_not_relation {
                     S: CollisionQuery,
                 {
                     let mut tmp = EntityHashSet::default();
-                    $t::filter_inner(node, boundary, &mut tmp);
+                    $r::filter_inner(node, boundary, &mut tmp);
                     All::all(node, res);
-                    res.extend(tmp);
+                    for entity in tmp.iter() {
+                        res.remove(entity);
+                    }
                 }
             }
         )+

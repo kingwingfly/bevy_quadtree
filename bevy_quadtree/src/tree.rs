@@ -79,6 +79,9 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N,
     /// Query the entities within the given relation with the boundary [`S: CollisionQuery`](crate::CollisionQuery),
     /// such as [`CollisionRect`](crate::CollisionRect), [`CollisionRotatedRect`](crate::CollisionRotatedRect), [`CollisionCircle`](crate::CollisionCircle) and tuple/array of them.
     /// The rule of the relation is defined in [`CollisionQuery::query`] and [`query`](crate::query).
+    ///
+    /// [`QRelation`]: implemented for [`Disjoint`](crate::Disjoint), [`Overlap`](crate::Overlap),
+    /// [`Contain`](crate::Contain), [`Contained`](crate::Contained), [`QOr`](crate::QOr), [`QNot`](crate::QNot) and tuple of them.
     pub fn query<S, Q>(&self, boundary: &S) -> EntityHashSet
     where
         S: CollisionQuery,
@@ -91,7 +94,7 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N,
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CollisionCircle, CollisionRect, Contain, Contained, Disjoint, Overlap, QOr};
+    use crate::{CollisionCircle, CollisionRect, Contain, Contained, Disjoint, Overlap, QNot, QOr};
     use rand::prelude::*;
     use rand_chacha::ChaCha8Rng;
 
@@ -251,8 +254,10 @@ mod tests {
             Vec2::ONE,
         )));
         assert_eq!(q.len(), 4);
-        let q = tree.query::<_, QOr<(Overlap, Contain)>>(&CollisionCircle::new(Vec2::ZERO, 2.));
-        assert_eq!(q.len(), 6);
+        let q = tree.query::<_, QOr<(Overlap, Contain)>>(&CollisionCircle::new(Vec2::ZERO, 1.));
+        assert_eq!(q.len(), 4);
+        let q = tree.query::<_, QNot<Contain>>(&CollisionCircle::new(Vec2::ZERO, 1.));
+        assert_eq!(q.len(), 4);
         let q = tree.query::<_, Disjoint>(&CollisionCircle::new(Vec2::splat(0.5), 1.));
         assert_eq!(q.len(), 2);
         let q = tree.query::<_, Contain>(&CollisionCircle::new(Vec2::splat(0.5), 1.));

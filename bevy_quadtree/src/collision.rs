@@ -78,13 +78,14 @@ pub trait UpdateCollision {
     fn update() -> impl FnOnce(&mut Self, &GlobalTransform);
 }
 
-/// Disassemble the boundary as [`CollisionRect`]s, [`CollisionRotatedRect`]s and [`CollisionCircle`]s as query boundary
-/// Pay attention to the default implementation of [`CollisionQuery`] when implementing your own.
+/// Disassemble the boundary as [`CollisionRect`]s, [`CollisionRotatedRect`]s and [`CollisionCircle`]s as query boundary.
+///
+/// Pay attention to the default implementation of [`CollisionQuery::query`] when implementing your own.
 /// However, disassemble the boundary as smaller possible shapes is recommended since it's easier.
-/// `CollisionQuery::disassemble` is called only in `CollisionQuery`'s default implementation,
-/// so leave it `unreachable!()` if you have your own implementation of `CollisionQuery`.
 pub trait CollisionQuery {
     /// Disassemble the shape as [`CollisionRect`], [`CollisionRotatedRect`] and [`CollisionCircle`] as query boundaries.
+    /// `CollisionQuery::disassemble` is called only in `CollisionQuery::query`'s default implementation,
+    /// so leave it `unreachable!()` if you have your own implementation of `CollisionQuery`.
     fn disassemble(
         &self,
     ) -> (
@@ -92,15 +93,15 @@ pub trait CollisionQuery {
         Vec<&CollisionRotatedRect>,
         Vec<&CollisionCircle>,
     );
-    /// Detect the relation between the boundary and the given object from the tree.
+    /// Detect the relation between the boundary and objects from the tree.
     /// The default `CollisionQuery` impletation:
     ///
-    /// Relation::Contain if any of the boundaries completely contains the object.
+    /// Relation::Contain if any of the sub-boundaries completely contains the object.
     ///
-    /// Relation::Contained if all of the boundaries are completely contained by the object.
+    /// Relation::Contained if all of the sub-boundaries are completely contained by the object.
     ///
-    /// Relation::Overlap if any of the boundaries overlaps the object
-    /// or not all of the boundaries are contained by the object.
+    /// Relation::Overlap if any of the sub-boundaries overlaps the object
+    /// or not all of the sub-boundaries are contained by the object.
     ///
     /// Relation::Disjoint otherwise.
     fn query(&self, obj: &dyn DynCollision) -> Relation {

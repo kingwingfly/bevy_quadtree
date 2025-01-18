@@ -7,7 +7,7 @@ use bevy::prelude::*;
 /// Rotated Rectagle shape implemented [`AsCollision`](crate::collision::AsCollision) trait to be used in the QuadTreePlugin
 /// and as a Component in the ECS.
 ///
-/// Also, implementes [`CollisionQuery`] trait to be used in the [`QuadTree::query`](crate::QuadTree::query).
+/// Also, implemented [`CollisionQuery`] trait to be used as boundary in the [`QuadTree::query`](crate::QuadTree::query).
 #[derive(Debug, Component, Clone)]
 pub struct CollisionRotatedRect {
     pub(crate) init_size: Vec2,
@@ -27,8 +27,10 @@ impl From<Rect> for CollisionRotatedRect {
 }
 
 impl CollisionRotatedRect {
-    /// Create a new CollisionRotatedRect with the given Rect, and rotation.
+    /// Create a new CollisionRotatedRect with the given Rect and rotation.
     /// The rotation is relative to the center of the rect.
+    /// When updating, the rotation from the GlobalTransform will be directly assigned to the isometric,
+    /// instead of based on the initial rotation.
     pub fn new(rect: Rect, rotation: Rot2) -> Self {
         Self {
             init_size: rect.size(),

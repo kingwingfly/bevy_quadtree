@@ -7,7 +7,7 @@ use bevy::prelude::*;
 /// Circle shape implemented [`AsCollision`](crate::collision::AsCollision) trait to be used in the QuadTreePlugin
 /// and as a Component in the ECS.
 ///
-/// Also, implementes [`CollisionQuery`] trait to be used in the [`QuadTree::query`](crate::QuadTree::query).
+/// Also, implemented [`CollisionQuery`] trait to be used as boundary in the [`QuadTree::query`](crate::QuadTree::query).
 ///
 /// # Panic
 /// Do not perform scaling with different x and y values, it will cause the circle to be an ellipse,

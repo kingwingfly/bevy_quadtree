@@ -8,7 +8,7 @@ use std::ops::Deref;
 /// Rectagle shape implemented [`AsCollision`](crate::collision::AsCollision) trait to be used in the QuadTreePlugin
 /// and as a Component in the ECS.
 ///
-/// Also, implementes [`CollisionQuery`] trait to be used in the [`QuadTree::query`](crate::QuadTree::query).
+/// Also, implemented [`CollisionQuery`] trait to be used as boundary in the [`QuadTree::query`](crate::QuadTree::query).
 ///
 /// # Panic
 /// Rotation is not supported for CollisionRect, see [`CollisionRotatedRect`] instead.
@@ -146,7 +146,7 @@ impl UpdateCollision for CollisionRect {
                 global_transform.rotation(),
                 Quat::IDENTITY,
                 "Rotation is not supported for CollisionRect,
-                use CollisionRotatedRect and add it to plugin generic params instead."
+                use `CollisionRotatedRect` and add it to plugin generic params instead."
             );
             rect.rect = Rect::from_center_size(
                 global_transform.translation().truncate(),
