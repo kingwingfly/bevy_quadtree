@@ -1,8 +1,14 @@
+//! QuadTree
+
 use crate::{
+    collision::DynCollision,
     node::{ArcNode, Node},
-    Disassemble, DynCollision, QRelation,
+    CollisionQuery, QRelation,
 };
-use bevy::{ecs::entity::EntityHashMap, prelude::*};
+use bevy::{
+    ecs::entity::{EntityHashMap, EntityHashSet},
+    prelude::*,
+};
 use core::fmt;
 use parking_lot::RwLock;
 use std::sync::Arc;
@@ -70,21 +76,22 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N,
         }
     }
 
-    /// Query the entities within the given relation with the boundary [`S: Disassemble`](crate::Disassemble),
-    /// such as [`CollisionRect`](crate::CollisionRect), [`CollisionCircle`](crate::CollisionCircle) and tuple/array of them.
-    /// The rule of the relation is defined in [`Disassemble::detect`](crate::Disassemble::detect) and [`QRelation`](crate::QRelation).
-    pub fn query<S>(&self, boundary: &S, relation: QRelation) -> Vec<Entity>
+    /// Query the entities within the given relation with the boundary [`S: CollisionQuery`](crate::CollisionQuery),
+    /// such as [`CollisionRect`](crate::CollisionRect), [`CollisionRotatedRect`](crate::CollisionRotatedRect), [`CollisionCircle`](crate::CollisionCircle) and tuple/array of them.
+    /// The rule of the relation is defined in [`CollisionQuery::query`] and [`query`](crate::query).
+    pub fn query<S, Q>(&self, boundary: &S) -> EntityHashSet
     where
-        S: Disassemble,
+        S: CollisionQuery,
+        Q: QRelation,
     {
-        Node::query(&self.root, boundary, relation)
+        Q::filter(&self.root, boundary)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::shape::{CollisionCircle, CollisionRect};
+    use crate::{CollisionCircle, CollisionRect, Contain, Contained, Disjoint, Overlap, QOr};
     use rand::prelude::*;
     use rand_chacha::ChaCha8Rng;
 
@@ -239,27 +246,18 @@ mod tests {
             assert_eq!(child.total(), 2);
             assert!(child.children.is_none());
         }
-        let q = tree.query(
-            &CollisionRect::from(Rect::from_center_size(Vec2::ZERO, Vec2::ONE)),
-            QRelation::Overlap,
-        );
+        let q = tree.query::<_, Overlap>(&CollisionRect::from(Rect::from_center_size(
+            Vec2::ZERO,
+            Vec2::ONE,
+        )));
         assert_eq!(q.len(), 4);
-        let q = tree.query(
-            &CollisionCircle::new(Vec2::ZERO, 2.),
-            QRelation::OverlapOrContain,
-        );
+        let q = tree.query::<_, QOr<(Overlap, Contain)>>(&CollisionCircle::new(Vec2::ZERO, 2.));
         assert_eq!(q.len(), 6);
-        let q = tree.query(
-            &CollisionCircle::new(Vec2::splat(0.5), 1.),
-            QRelation::Disjoint,
-        );
+        let q = tree.query::<_, Disjoint>(&CollisionCircle::new(Vec2::splat(0.5), 1.));
         assert_eq!(q.len(), 2);
-        let q = tree.query(
-            &CollisionCircle::new(Vec2::splat(0.5), 1.),
-            QRelation::Contain,
-        );
+        let q = tree.query::<_, Contain>(&CollisionCircle::new(Vec2::splat(0.5), 1.));
         assert_eq!(q.len(), 1);
-        let q = tree.query(&CollisionCircle::new(Vec2::ONE, 0.4), QRelation::Contained);
+        let q = tree.query::<_, Contained>(&CollisionCircle::new(Vec2::ONE, 0.4));
         assert_eq!(q.len(), 2);
     }
 }

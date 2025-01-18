@@ -1,7 +1,10 @@
+//! QuadTree Plugin
+
 use crate::collision::AsCollision;
+use crate::collision::DynCollision;
 use crate::system::{update_collision, update_quadtree};
 use crate::tree::QuadTree;
-use crate::{DynCollision, UpdateCollision};
+use crate::UpdateCollision;
 use bevy::prelude::*;
 
 /// A Bevy plugin for quadtree.

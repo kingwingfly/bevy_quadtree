@@ -1,3 +1,5 @@
+//! Collision Detection
+
 use bevy::prelude::{Component, GlobalTransform};
 use paste::paste;
 
@@ -16,23 +18,8 @@ pub enum Relation {
     Contain,
     /// `a` is completely contained by `b`, `a` is in `b` and smaller
     Contained,
-}
-
-/// Represents the relation between two shapes. Used in [`QuadTree::query`](crate::QuadTree::query) only.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum QRelation {
-    /// `a` disjoints `b`
-    Disjoint,
-    /// `a` overlaps but doesn't completely contain `b`, including ExternallyTangent, InternallyTangent
-    Overlap,
-    /// `a` completely contains `b`, `b` is in `a` and smaller
-    Contain,
-    /// `a` is completely contained by `b`, `a` is in `b` and smaller
-    Contained,
-    /// `a` overlaps or completely contains `b`, `b` is in `a` and smaller if contains.
-    ///
-    /// This should be **only** used in [`QuadTree::query`](crate::QuadTree::query)
-    OverlapOrContain,
+    // // not disjoint. `Relation::Overlap | Relation::Contain | Relation::Contained`
+    // NotDisjoint,
 }
 
 /// Storing shape and position infomation, performs Collision Detection with the given `S`.
@@ -94,11 +81,11 @@ pub trait UpdateCollision {
 }
 
 /// Disassemble the boundary as [`CollisionRect`]s, [`CollisionRotatedRect`]s and [`CollisionCircle`]s as query boundary
-/// Pay attention to the default implementation of [`Disassemble::detect`] when implementing your own.
+/// Pay attention to the default implementation of [`CollisionQuery`] when implementing your own.
 /// However, disassemble the boundary as smaller possible shapes is recommended since it's easier.
-/// `Disassemble::disassemble` is called only in `Disassemble::detect`'s default implementation,
-/// so leave it `unreachable!()` if you have your own implementation of `Disassemble::detect`.
-pub trait Disassemble {
+/// `CollisionQuery::disassemble` is called only in `CollisionQuery`'s default implementation,
+/// so leave it `unreachable!()` if you have your own implementation of `CollisionQuery`.
+pub trait CollisionQuery {
     /// Disassemble the shape as [`CollisionRect`], [`CollisionRotatedRect`] and [`CollisionCircle`] as query boundaries.
     fn disassemble(
         &self,
@@ -108,7 +95,7 @@ pub trait Disassemble {
         Vec<&CollisionCircle>,
     );
     /// Detect the relation between the boundary and the given object from the tree.
-    /// The default `Disassemble::detect` impletation:
+    /// The default `CollisionQuery` impletation:
     ///
     /// Relation::Contain if any of the boundaries completely contains the object.
     ///
@@ -118,7 +105,7 @@ pub trait Disassemble {
     /// or not all of the boundaries are contained by the object.
     ///
     /// Relation::Disjoint otherwise.
-    fn detect(&self, obj: &dyn DynCollision) -> Relation {
+    fn query(&self, obj: &dyn DynCollision) -> Relation {
         let (rects, rotated_rects, circles) = self.disassemble();
         let mut relation = Relation::Contain;
         for rect in rects {
@@ -149,9 +136,9 @@ pub trait Disassemble {
     }
 }
 
-impl<T> Disassemble for [T]
+impl<T> CollisionQuery for [T]
 where
-    T: Disassemble,
+    T: CollisionQuery,
 {
     fn disassemble(
         &self,
@@ -176,9 +163,9 @@ where
 macro_rules! impl_disassemble {
     ($($i: literal),+) => {
         paste! {
-            impl<$([<S $i>]),+> Disassemble for ($([<S $i>]),+,)
+            impl<$([<S $i>]),+> CollisionQuery for ($([<S $i>]),+,)
             where
-                $([<S $i>]: Disassemble,)+
+                $([<S $i>]: CollisionQuery,)+
             {
                 fn disassemble(
                     &self,

@@ -1,6 +1,6 @@
 use crate::{
-    Collision, CollisionCircle, CollisionRotatedRect, Disassemble, DynCollision, Relation,
-    UpdateCollision,
+    collision::{DynCollision, Relation},
+    Collision, CollisionCircle, CollisionQuery, CollisionRotatedRect, UpdateCollision,
 };
 use bevy::prelude::*;
 use std::ops::Deref;
@@ -8,13 +8,13 @@ use std::ops::Deref;
 /// Rectagle shape implemented [`AsCollision`](crate::AsCollision) trait to be used in the QuadTreePlugin
 /// and as a Component in the ECS.
 ///
-/// Also, implementes [`Disassemble`](crate::Disassemble) trait to be used in the [`QuadTree::query`](crate::QuadTree::query).
+/// Also, implementes [`CollisionQuery`] trait to be used in the [`QuadTree::query`](crate::QuadTree::query).
 ///
 /// # Panic
-/// Rotation is not supported for CollisionRect
+/// Rotation is not supported for CollisionRect, see [`CollisionRotatedRect`] instead.
 #[derive(Debug, Component, Clone)]
 pub struct CollisionRect {
-    rect: Rect,
+    pub(crate) rect: Rect,
     init_size: Vec2,
 }
 
@@ -63,7 +63,69 @@ impl Collision<CollisionRect> for CollisionRect {
 
 impl Collision<CollisionRotatedRect> for CollisionRect {
     fn detect(&self, r_rect: &CollisionRotatedRect) -> Relation {
-        todo!()
+        let r_half_size = r_rect.init_size * r_rect.scale / 2.;
+        let mut vetex = [
+            Vec2::new(r_half_size.x, r_half_size.y),
+            Vec2::new(-r_half_size.x, r_half_size.y),
+            Vec2::new(-r_half_size.x, -r_half_size.y),
+            Vec2::new(r_half_size.x, -r_half_size.y),
+        ];
+        let (mut min_x, mut max_x, mut min_y, mut max_y) = (
+            f32::INFINITY,
+            f32::NEG_INFINITY,
+            f32::INFINITY,
+            f32::NEG_INFINITY,
+        );
+        for v in vetex.iter_mut() {
+            *v = r_rect.isometric * *v;
+            min_x = min_x.min(v.x);
+            max_x = max_x.max(v.x);
+            min_y = min_y.min(v.y);
+            max_y = max_y.max(v.y);
+        }
+        if self.max.x < min_x || self.min.x > max_x || self.max.y < min_y || self.min.y > max_y {
+            return Relation::Disjoint;
+        } else if self.min.x < min_x
+            && max_x < self.max.x
+            && self.min.y < min_y
+            && max_y < self.max.y
+        {
+            return Relation::Contain;
+        }
+        let mut vetex = [
+            self.max,
+            Vec2::new(self.min.x, self.max.y),
+            self.min,
+            Vec2::new(self.max.x, self.min.y),
+        ];
+        let (mut min_x, mut max_x, mut min_y, mut max_y) = (
+            f32::INFINITY,
+            f32::NEG_INFINITY,
+            f32::INFINITY,
+            f32::NEG_INFINITY,
+        );
+        let inv = r_rect.isometric.inverse();
+        for v in vetex.iter_mut() {
+            *v = inv * *v;
+            min_x = min_x.min(v.x);
+            max_x = max_x.max(v.x);
+            min_y = min_y.min(v.y);
+            max_y = max_y.max(v.y);
+        }
+        if r_half_size.x < min_x
+            || -r_half_size.x > max_x
+            || r_half_size.y < min_y
+            || -r_half_size.y > max_y
+        {
+            return Relation::Disjoint;
+        } else if -r_half_size.x < min_x
+            && max_x < r_half_size.x
+            && -r_half_size.y < min_y
+            && max_y < r_half_size.y
+        {
+            return Relation::Contained;
+        }
+        Relation::Overlap
     }
 }
 
@@ -94,7 +156,7 @@ impl UpdateCollision for CollisionRect {
     }
 }
 
-impl Disassemble for CollisionRect {
+impl CollisionQuery for CollisionRect {
     fn disassemble(
         &self,
     ) -> (
@@ -105,7 +167,7 @@ impl Disassemble for CollisionRect {
         unreachable!()
     }
 
-    fn detect(&self, obj: &dyn DynCollision) -> Relation {
+    fn query(&self, obj: &dyn DynCollision) -> Relation {
         let mut relation = Relation::Contain;
         match obj.detect(self) {
             Relation::Contain => return Relation::Contained,
@@ -114,5 +176,62 @@ impl Disassemble for CollisionRect {
             Relation::Disjoint => relation = Relation::Disjoint,
         }
         relation
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::f32::consts::*;
+
+    #[test]
+    fn collision_rect_detect() {
+        let rect = CollisionRect::from(Rect::from_center_size(Vec2::ZERO, Vec2::ONE));
+        let contain = CollisionRect::from(Rect::from_center_size(Vec2::ZERO, Vec2::ONE / 2.));
+        let contained = CollisionRect::from(Rect::from_center_size(Vec2::ZERO, Vec2::ONE * 2.));
+        let disjoint = CollisionRect::from(Rect::from_center_size(Vec2::new(2., 2.), Vec2::ONE));
+        let overlap = CollisionRect::from(Rect::from_center_size(Vec2::new(0.5, 0.5), Vec2::ONE));
+        assert_eq!(rect.detect(&contain), Relation::Contain);
+        assert_eq!(rect.detect(&contained), Relation::Contained);
+        assert_eq!(rect.detect(&disjoint), Relation::Disjoint);
+        assert_eq!(rect.detect(&overlap), Relation::Overlap);
+    }
+
+    #[test]
+    fn collision_rect_detect_circle() {
+        let rect = CollisionRect::from(Rect::from_center_size(Vec2::ZERO, Vec2::ONE));
+        let contain = CollisionCircle::new(Vec2::ZERO, 0.4);
+        let contained = CollisionCircle::new(Vec2::ZERO, 2.);
+        let disjoint = CollisionCircle::new(Vec2::new(2., 2.), 1.);
+        let overlap = CollisionCircle::new(Vec2::new(0.5, 0.5), 1.);
+        assert_eq!(rect.detect(&contain), Relation::Contain);
+        assert_eq!(rect.detect(&contained), Relation::Contained);
+        assert_eq!(rect.detect(&disjoint), Relation::Disjoint);
+        assert_eq!(rect.detect(&overlap), Relation::Overlap);
+    }
+
+    #[test]
+    fn collision_rect_detect_rotated_rect() {
+        let rect = CollisionRect::from(Rect::from_center_size(Vec2::ZERO, Vec2::ONE));
+        let contain = CollisionRotatedRect::new(
+            Rect::from_center_size(Vec2::ZERO, Vec2::ONE / 2.),
+            Rot2::radians(FRAC_PI_4),
+        );
+        let contained = CollisionRotatedRect::new(
+            Rect::from_center_size(Vec2::ZERO, Vec2::ONE * 3.),
+            Rot2::radians(FRAC_PI_4),
+        );
+        let disjoint = CollisionRotatedRect::new(
+            Rect::from_center_size(Vec2::new(2., 2.), Vec2::ONE),
+            Rot2::radians(FRAC_PI_4),
+        );
+        let overlap = CollisionRotatedRect::new(
+            Rect::from_center_size(Vec2::new(0.5, 0.5), Vec2::ONE),
+            Rot2::radians(FRAC_PI_4),
+        );
+        assert_eq!(rect.detect(&contain), Relation::Contain);
+        assert_eq!(rect.detect(&contained), Relation::Contained);
+        assert_eq!(rect.detect(&disjoint), Relation::Disjoint);
+        assert_eq!(rect.detect(&overlap), Relation::Overlap);
     }
 }

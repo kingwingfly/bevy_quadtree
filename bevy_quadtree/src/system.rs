@@ -1,4 +1,4 @@
-use crate::{tree::QuadTree, DynCollision, UpdateCollision};
+use crate::{collision::DynCollision, tree::QuadTree, UpdateCollision};
 use bevy::prelude::*;
 
 pub(crate) fn update_collision<S>(

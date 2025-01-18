@@ -1,3 +1,5 @@
+//! Shapes able to be used in Collision Detection
+
 mod circle;
 mod rect;
 mod rotated_rect;
