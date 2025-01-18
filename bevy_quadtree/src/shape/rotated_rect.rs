@@ -29,7 +29,7 @@ impl From<Rect> for CollisionRotatedRect {
 impl CollisionRotatedRect {
     /// Create a new CollisionRotatedRect with the given Rect and rotation.
     /// The rotation is relative to the center of the rect.
-    /// When updating, the rotation from the GlobalTransform will be directly assigned to the isometric,
+    /// When updating, the rotation from the GlobalTransform will directly cover the isometric,
     /// instead of based on the initial rotation.
     pub fn new(rect: Rect, rotation: Rot2) -> Self {
         Self {
@@ -37,6 +37,11 @@ impl CollisionRotatedRect {
             scale: Vec2::ONE,
             isometric: Isometry2d::new(rect.center(), rotation),
         }
+    }
+
+    /// Set the initial size of the rect, which is used to compute the size with the GlobalTransform's scale.
+    pub fn set_init_size(&mut self, size: Vec2) {
+        self.init_size = size;
     }
 }
 

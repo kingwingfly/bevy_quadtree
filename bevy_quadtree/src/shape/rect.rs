@@ -35,6 +35,23 @@ impl From<Rect> for CollisionRect {
     }
 }
 
+impl CollisionRect {
+    /// Create a new CollisionRect from a Rect.
+    /// The initial size is set to the size of the rect.
+    /// It is used to compute the size with the GlobalTransform's scale.
+    ///
+    /// The initial center is set to the center of the rect.
+    /// It is covered by the GlobalTransform's translation during the update.
+    pub fn new(rect: Rect) -> Self {
+        rect.into()
+    }
+
+    /// Set the initial size of the rect, which is used to compute the size with the GlobalTransform's scale.
+    pub fn set_init_size(&mut self, size: Vec2) {
+        self.init_size = size;
+    }
+}
+
 impl Collision<CollisionRect> for CollisionRect {
     fn detect(&self, rect: &CollisionRect) -> Relation {
         if self.min.x < rect.min.x

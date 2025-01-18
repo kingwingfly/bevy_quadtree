@@ -20,13 +20,20 @@ pub struct CollisionCircle {
 }
 
 impl CollisionCircle {
-    #[allow(missing_docs)]
+    /// The initial radius is used to compute the size with the GlobalTransform's scale.
+    ///
+    /// The initial center is covered by the GlobalTransform's translation during the update.
     pub fn new(center: Vec2, radius: f32) -> Self {
         Self {
             center,
             radius,
             init_radius: radius,
         }
+    }
+
+    /// Set the initial radius of the circle, which is used to compute the radius with the GlobalTransform's scale.
+    pub fn set_init_radius(&mut self, radius: f32) {
+        self.init_radius = radius;
     }
 }
 
