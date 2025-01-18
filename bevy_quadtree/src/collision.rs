@@ -18,8 +18,6 @@ pub enum Relation {
     Contain,
     /// `a` is completely contained by `b`, `a` is in `b` and smaller
     Contained,
-    // // not disjoint. `Relation::Overlap | Relation::Contain | Relation::Contained`
-    // NotDisjoint,
 }
 
 /// Storing shape and position infomation, performs Collision Detection with the given `S`.
