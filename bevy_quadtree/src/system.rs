@@ -68,12 +68,12 @@ pub(crate) fn show_box<const N: usize, const W: usize, const H: usize, const K: 
     fn draw<const N: usize, const K: usize>(gizmos: &mut Gizmos, node: &ArcNode<N, K>) {
         let node = node.read();
         gizmos.rect_2d(
-            node.inlet_boundary.center() / 2.,
+            node.inlet_boundary.center(),
             node.inlet_boundary.size(),
             GREEN,
         );
         gizmos.rect_2d(
-            node.outlet_boundary.center() / 2.,
+            node.outlet_boundary.center(),
             node.outlet_boundary.size(),
             RED,
         );
