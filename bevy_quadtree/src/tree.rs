@@ -17,7 +17,7 @@ use std::sync::Arc;
 /// The root node boundary's center is (0, 0).
 #[derive(Resource)]
 pub struct QuadTree<const N: usize, const W: usize, const H: usize, const K: usize = 10> {
-    pub(self) root: ArcNode<N, K>,
+    pub(crate) root: ArcNode<N, K>,
     entities: Arc<RwLock<EntityHashMap<ArcNode<N, K>>>>,
 }
 

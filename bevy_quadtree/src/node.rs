@@ -20,7 +20,7 @@ pub type ArcNode<const N: usize, const K: usize> = Arc<RwLock<Node<N, K>>>;
 /// Node in `QuadTree`
 pub struct Node<const N: usize, const K: usize = 10> {
     pub(crate) entities: EntityHashMap<Box<dyn DynCollision>>,
-    inlet_boundary: CollisionRect,
+    pub(crate) inlet_boundary: CollisionRect,
     pub(crate) outlet_boundary: CollisionRect,
     parent: Option<ArcNode<N, K>>,
     pub(crate) children: Option<[ArcNode<N, K>; 4]>,

@@ -67,6 +67,11 @@ where
         app.init_resource::<QuadTree<N, W, H, K>>()
             .add_systems(PreUpdate, update_collision::<S, CD>)
             .add_systems(Update, update_quadtree::<S, N, W, H, K, CD>);
+        #[cfg(feature = "gizmos")]
+        {
+            use crate::system::show_box;
+            app.add_systems(Update, show_box::<N, W, H, K>);
+        }
     }
 }
 
@@ -92,6 +97,11 @@ macro_rules! impl_plugin {
                             $(update_quadtree::<$shape, N, W, H, K, CD>),+
                         ),
                 );
+                #[cfg(feature = "gizmos")]
+                {
+                    use crate::system::show_box;
+                    app.add_systems(Update, show_box::<N, W, H, K>);
+                }
             }
         }
     };

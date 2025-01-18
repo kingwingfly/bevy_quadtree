@@ -54,3 +54,34 @@ pub(crate) fn update_quadtree<
         tree.remove(&e);
     }
 }
+
+#[cfg(feature = "gizmos")]
+pub(crate) fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>(
+    tree: Res<QuadTree<N, W, H, K>>,
+    mut gizmos: Gizmos,
+) where
+    QuadTree<N, W, H, K>: Resource,
+{
+    use crate::node::ArcNode;
+    use bevy::color::palettes::css::*;
+
+    fn draw<const N: usize, const K: usize>(gizmos: &mut Gizmos, node: &ArcNode<N, K>) {
+        let node = node.read();
+        gizmos.rect_2d(
+            node.inlet_boundary.center() / 2.,
+            node.inlet_boundary.size(),
+            GREEN,
+        );
+        gizmos.rect_2d(
+            node.outlet_boundary.center() / 2.,
+            node.outlet_boundary.size(),
+            RED,
+        );
+        if let Some(children) = &node.children {
+            for child in children.iter() {
+                draw(gizmos, child);
+            }
+        }
+    }
+    draw(&mut gizmos, &tree.root);
+}
