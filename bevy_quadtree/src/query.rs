@@ -64,58 +64,6 @@ impl QRelation for All {
     }
 }
 
-impl QRelation for Contain {
-    fn filter_inner<S, const N: usize, const K: usize>(
-        node: &ArcNode<N, K>,
-        boundary: &S,
-        res: &mut EntityHashSet,
-    ) where
-        S: CollisionQuery,
-    {
-        let node_r = node.read();
-        match boundary.query(&node_r.outlet_boundary) {
-            Relation::Disjoint => {}
-            Relation::Overlap | Relation::Contain | Relation::Contained => {
-                for (entity, shape) in node_r.entities.iter() {
-                    if boundary.query(shape.as_ref()) == Relation::Contain {
-                        res.insert(*entity);
-                    }
-                }
-                if let Some(children) = &node_r.children {
-                    for child in children.iter() {
-                        Self::filter_inner(child, boundary, res);
-                    }
-                }
-            }
-        }
-    }
-}
-impl QRelation for Contained {
-    fn filter_inner<S, const N: usize, const K: usize>(
-        node: &ArcNode<N, K>,
-        boundary: &S,
-        res: &mut EntityHashSet,
-    ) where
-        S: CollisionQuery,
-    {
-        let node_r = node.read();
-        match boundary.query(&node_r.outlet_boundary) {
-            Relation::Disjoint | Relation::Contain => {}
-            Relation::Overlap | Relation::Contained => {
-                for (entity, shape) in node_r.entities.iter() {
-                    if boundary.query(shape.as_ref()) == Relation::Contained {
-                        res.insert(*entity);
-                    }
-                }
-                if let Some(children) = &node_r.children {
-                    for child in children.iter() {
-                        Self::filter_inner(child, boundary, res);
-                    }
-                }
-            }
-        }
-    }
-}
 impl QRelation for Disjoint {
     fn filter_inner<S, const N: usize, const K: usize>(
         node: &ArcNode<N, K>,
@@ -126,9 +74,7 @@ impl QRelation for Disjoint {
     {
         let node_r = node.read();
         match boundary.query(&node_r.outlet_boundary) {
-            Relation::Disjoint => {
-                All::all(node, res);
-            }
+            Relation::Disjoint => All::all(node, res),
             Relation::Overlap | Relation::Contained => {
                 for (entity, shape) in node_r.entities.iter() {
                     if boundary.query(shape.as_ref()) == Relation::Disjoint {
@@ -155,10 +101,63 @@ impl QRelation for Overlap {
     {
         let node_r = node.read();
         match boundary.query(&node_r.outlet_boundary) {
-            Relation::Disjoint => {}
-            Relation::Overlap | Relation::Contained | Relation::Contain => {
+            Relation::Disjoint | Relation::Contain => {}
+            Relation::Overlap | Relation::Contained => {
                 for (entity, shape) in node_r.entities.iter() {
                     if boundary.query(shape.as_ref()) == Relation::Overlap {
+                        res.insert(*entity);
+                    }
+                }
+                if let Some(children) = &node_r.children {
+                    for child in children.iter() {
+                        Self::filter_inner(child, boundary, res);
+                    }
+                }
+            }
+        }
+    }
+}
+impl QRelation for Contain {
+    fn filter_inner<S, const N: usize, const K: usize>(
+        node: &ArcNode<N, K>,
+        boundary: &S,
+        res: &mut EntityHashSet,
+    ) where
+        S: CollisionQuery,
+    {
+        let node_r = node.read();
+        match boundary.query(&node_r.outlet_boundary) {
+            Relation::Disjoint => {}
+            Relation::Contain => All::all(node, res),
+            Relation::Overlap | Relation::Contained => {
+                for (entity, shape) in node_r.entities.iter() {
+                    if boundary.query(shape.as_ref()) == Relation::Contain {
+                        res.insert(*entity);
+                    }
+                }
+                if let Some(children) = &node_r.children {
+                    for child in children.iter() {
+                        Self::filter_inner(child, boundary, res);
+                    }
+                }
+            }
+        }
+    }
+}
+impl QRelation for Contained {
+    fn filter_inner<S, const N: usize, const K: usize>(
+        node: &ArcNode<N, K>,
+        boundary: &S,
+        res: &mut EntityHashSet,
+    ) where
+        S: CollisionQuery,
+    {
+        let node_r = node.read();
+        match boundary.query(&node_r.outlet_boundary) {
+            Relation::Disjoint | Relation::Contain | Relation::Overlap => {}
+            Relation::Contained => {
+                for (entity, shape) in node_r.entities.iter() {
+                    if boundary.query(shape.as_ref()) == Relation::Contained {
                         res.insert(*entity);
                     }
                 }

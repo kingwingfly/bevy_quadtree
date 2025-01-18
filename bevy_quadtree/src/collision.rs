@@ -48,7 +48,7 @@ impl<T> DynCollision for T where
 {
 }
 
-/// Marker trait for [`S: DynCollision + Component`](crate::DynCollision) and tuple of `S`s
+/// Marker trait for [`S: DynCollision + Component`](crate::collision::DynCollision) and tuple of `S`s
 pub trait AsCollision {}
 
 impl<T> AsCollision for T where T: DynCollision + UpdateCollision + Component + Clone {}

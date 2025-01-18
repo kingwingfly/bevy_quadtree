@@ -131,7 +131,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
                     Self::insert_inner(&p, entity, shape, changed, &mut UNLESS_PARENT.to_vec());
                 }
             }
-            Relation::Disjoint => {
+            Relation::Disjoint | Relation::Overlap => {
                 let quadrant = this_r.quadrant;
                 drop(this_r);
                 this.write().entities.remove(&entity);
@@ -139,7 +139,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
                     Self::insert_inner(p, entity, shape, changed, &mut vec![quadrant]);
                 }
             }
-            Relation::Overlap | Relation::Contained => match shape.detect(&this_r.inlet_boundary) {
+            Relation::Contained => match shape.detect(&this_r.inlet_boundary) {
                 Relation::Disjoint | Relation::Overlap | Relation::Contain => {}
                 Relation::Contained => {
                     drop(this_r);

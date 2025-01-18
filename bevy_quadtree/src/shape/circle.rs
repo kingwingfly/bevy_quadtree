@@ -4,7 +4,7 @@ use crate::{
 };
 use bevy::prelude::*;
 
-/// Circle shape implemented [`AsCollision`](crate::AsCollision) trait to be used in the QuadTreePlugin
+/// Circle shape implemented [`AsCollision`](crate::collision::AsCollision) trait to be used in the QuadTreePlugin
 /// and as a Component in the ECS.
 ///
 /// Also, implementes [`CollisionQuery`] trait to be used in the [`QuadTree::query`](crate::QuadTree::query).
