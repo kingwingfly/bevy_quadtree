@@ -127,14 +127,14 @@ impl<const N: usize, const K: usize> Node<N, K> {
                 if let Some(p) = &this_r.parent {
                     let p = Arc::clone(p);
                     drop(this_r);
-                    this.write().entities.remove(&entity);
+                    Node::remove(this, &entity);
                     Self::insert_inner(&p, entity, shape, changed, &mut UNLESS_PARENT.to_vec());
                 }
             }
             Relation::Disjoint | Relation::Overlap => {
                 let quadrant = this_r.quadrant;
                 drop(this_r);
-                this.write().entities.remove(&entity);
+                Node::remove(this, &entity);
                 if let Some(p) = &this.read().parent {
                     Self::insert_inner(p, entity, shape, changed, &mut vec![quadrant]);
                 }
@@ -143,7 +143,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
                 Relation::Disjoint | Relation::Overlap | Relation::Contain => {}
                 Relation::Contained => {
                     drop(this_r);
-                    this.write().entities.remove(&entity);
+                    Node::remove(this, &entity);
                     Self::insert_inner(this, entity, shape, changed, &mut vec![]);
                 }
             },
