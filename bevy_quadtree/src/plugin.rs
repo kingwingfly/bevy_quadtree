@@ -29,6 +29,7 @@ use bevy::prelude::*;
 /// `K`: For `LooseQuadTree`, K / 10 = outlet_boundary / inlet_boundary. Set K to 10 by default and 20 is founded best.
 /// K should >= 10. Only if the object move and is **no longer completely contained** by the outlet_boundary will it be inserted again.
 ///
+/// `ID`: If you want different quadtree for different use cases with the same other parameters, set ID to different values.
 /// # Example
 /// ```no_run
 /// use bevy::prelude::*;
@@ -44,15 +45,21 @@ use bevy::prelude::*;
 ///         40, 100, 100, 20>::default());
 /// ```
 #[derive(Debug)]
-pub struct QuadTreePlugin<P, const N: usize, const W: usize, const H: usize, const K: usize = 10>
-where
+pub struct QuadTreePlugin<
+    P,
+    const N: usize,
+    const W: usize,
+    const H: usize,
+    const K: usize = 10,
+    const ID: usize = 1,
+> where
     P: TrackingPair,
 {
     _marker: std::marker::PhantomData<P>,
 }
 
-impl<P, const N: usize, const W: usize, const H: usize, const K: usize> Default
-    for QuadTreePlugin<P, N, W, H, K>
+impl<P, const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize> Default
+    for QuadTreePlugin<P, N, W, H, K, ID>
 where
     P: TrackingPair,
 {
@@ -63,15 +70,15 @@ where
     }
 }
 
-impl<P, const N: usize, const W: usize, const H: usize, const K: usize> Plugin
-    for QuadTreePlugin<P, N, W, H, K>
+impl<P, const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize> Plugin
+    for QuadTreePlugin<P, N, W, H, K, ID>
 where
     P: TrackingPair,
 {
     fn build(&self, app: &mut App) {
-        app.init_resource::<QuadTree<N, W, H, K>>()
+        app.init_resource::<QuadTree<N, W, H, K, ID>>()
             .add_systems(PreUpdate, P::update_collision())
-            .add_systems(Update, P::update_quadtree::<N, W, H, K>());
+            .add_systems(Update, P::update_quadtree::<N, W, H, K, ID>());
         #[cfg(feature = "gizmos")]
         {
             app.add_systems(PostUpdate, P::show_box::<N, W, H, K>());
@@ -85,11 +92,17 @@ pub trait TrackingPair: Send + Sync + 'static {
     /// return the system to update collision
     fn update_collision() -> SystemConfigs;
     /// return the system to update quadtree
-    fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize>(
-    ) -> SystemConfigs;
+    fn update_quadtree<
+        const N: usize,
+        const W: usize,
+        const H: usize,
+        const K: usize,
+        const ID: usize,
+    >() -> SystemConfigs;
     /// return the system to show box
     #[cfg(feature = "gizmos")]
-    fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>() -> SystemConfigs;
+    fn show_box<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+    ) -> SystemConfigs;
 }
 
 impl<S, C> TrackingPair for (S, C)
@@ -101,14 +114,20 @@ where
         (update_collision::<S, C>,).ambiguous_with_all()
     }
 
-    fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize>(
-    ) -> SystemConfigs {
-        (update_quadtree::<S, N, W, H, K>).ambiguous_with_all()
+    fn update_quadtree<
+        const N: usize,
+        const W: usize,
+        const H: usize,
+        const K: usize,
+        const ID: usize,
+    >() -> SystemConfigs {
+        (update_quadtree::<S, N, W, H, K, ID>).ambiguous_with_all()
     }
     #[cfg(feature = "gizmos")]
-    fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>() -> SystemConfigs {
+    fn show_box<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+    ) -> SystemConfigs {
         use crate::system::show_box;
-        (show_box::<S, N, W, H, K>,).ambiguous_with_all()
+        (show_box::<S, N, W, H, K, ID>,).ambiguous_with_all()
     }
 }
 
@@ -123,15 +142,15 @@ macro_rules! impl_tracking_pair {
                 fn update_collision() -> SystemConfigs {
                     ($(update_collision::<[<S $i>], [<C $i>]>),+,).chain()
                 }
-                fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize>(
+                fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
                 ) -> SystemConfigs {
-                    ($(update_quadtree::<[<S $i>], N, W, H, K>),+,).chain()
+                    ($(update_quadtree::<[<S $i>], N, W, H, K, ID>),+,).chain()
                 }
                 #[cfg(feature = "gizmos")]
-                fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>(
+                fn show_box<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
                 ) -> SystemConfigs {
                     use crate::system::show_box;
-                    ($(show_box::<[<S $i>], N, W, H, K>),+,).chain()
+                    ($(show_box::<[<S $i>], N, W, H, K, ID>),+,).chain()
                 }
             }
         }

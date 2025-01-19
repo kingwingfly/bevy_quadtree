@@ -16,24 +16,31 @@ use std::sync::Arc;
 /// The QuadTree used as `Resource` in this plugin.
 /// The root node boundary's center is (0, 0).
 #[derive(Resource)]
-pub struct QuadTree<const N: usize, const W: usize, const H: usize, const K: usize = 10> {
+pub struct QuadTree<
+    const N: usize,
+    const W: usize,
+    const H: usize,
+    const K: usize = 10,
+    const ID: usize = 1,
+> {
     pub(crate) root: ArcNode<N, K>,
     pub(crate) entities: Arc<RwLock<EntityHashMap<ArcNode<N, K>>>>,
 }
 
-impl<const N: usize, const W: usize, const H: usize, const K: usize> fmt::Debug
-    for QuadTree<N, W, H, K>
+impl<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize> fmt::Debug
+    for QuadTree<N, W, H, K, ID>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("QuadTree")
+            .field("quadtree id", &ID)
             .field("total entities", &self.len())
             .field("root", &self.root)
             .finish()
     }
 }
 
-impl<const N: usize, const W: usize, const H: usize, const K: usize> Default
-    for QuadTree<N, W, H, K>
+impl<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize> Default
+    for QuadTree<N, W, H, K, ID>
 {
     fn default() -> Self {
         let root = Arc::new(RwLock::new(Node::root(Rect::from_center_size(
@@ -47,7 +54,9 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> Default
     }
 }
 
-impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N, W, H, K> {
+impl<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>
+    QuadTree<N, W, H, K, ID>
+{
     fn len(&self) -> usize {
         self.entities.read().len()
     }

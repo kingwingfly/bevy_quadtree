@@ -11,8 +11,15 @@ where
     }
 }
 
-pub(crate) fn update_quadtree<S, const N: usize, const W: usize, const H: usize, const K: usize>(
-    tree: Res<QuadTree<N, W, H, K>>,
+pub(crate) fn update_quadtree<
+    S,
+    const N: usize,
+    const W: usize,
+    const H: usize,
+    const K: usize,
+    const ID: usize,
+>(
+    tree: Res<QuadTree<N, W, H, K, ID>>,
     q: Query<(Entity, &S), Changed<S>>,
     mut r: RemovedComponents<S>,
 ) where
@@ -28,8 +35,15 @@ pub(crate) fn update_quadtree<S, const N: usize, const W: usize, const H: usize,
 }
 
 #[cfg(feature = "gizmos")]
-pub(crate) fn show_box<S, const N: usize, const W: usize, const H: usize, const K: usize>(
-    tree: Res<QuadTree<N, W, H, K>>,
+pub(crate) fn show_box<
+    S,
+    const N: usize,
+    const W: usize,
+    const H: usize,
+    const K: usize,
+    const ID: usize,
+>(
+    tree: Res<QuadTree<N, W, H, K, ID>>,
     q: Query<(Entity, &GlobalTransform), With<S>>,
     mut gizmos: Gizmos,
 ) where
