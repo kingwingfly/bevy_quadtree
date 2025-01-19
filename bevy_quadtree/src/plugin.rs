@@ -4,7 +4,7 @@ use crate::collision::DynCollision;
 use crate::system::{update_collision, update_quadtree};
 use crate::tree::QuadTree;
 use crate::UpdateCollision;
-use bevy::ecs::schedule::NodeConfigs;
+use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;
 
 /// A Bevy plugin for quadtree.
@@ -83,14 +83,13 @@ where
 /// Also implemented for tuple of `(S, C)` pairs.
 pub trait TrackingPair: Send + Sync + 'static {
     /// return the system to update collision
-    fn update_collision() -> NodeConfigs<Box<dyn System<In = (), Out = ()>>>;
+    fn update_collision() -> SystemConfigs;
     /// return the system to update quadtree
     fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize>(
-    ) -> NodeConfigs<Box<dyn System<In = (), Out = ()>>>;
+    ) -> SystemConfigs;
     /// return the system to show box
     #[cfg(feature = "gizmos")]
-    fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>(
-    ) -> NodeConfigs<Box<dyn System<In = (), Out = ()>>>;
+    fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>() -> SystemConfigs;
 }
 
 impl<S, C> TrackingPair for (S, C)
@@ -98,17 +97,16 @@ where
     S: Component + DynCollision + UpdateCollision<C> + Clone,
     C: Component,
 {
-    fn update_collision() -> NodeConfigs<Box<dyn System<In = (), Out = ()>>> {
+    fn update_collision() -> SystemConfigs {
         (update_collision::<S, C>,).ambiguous_with_all()
     }
 
     fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize>(
-    ) -> NodeConfigs<Box<dyn System<In = (), Out = ()>>> {
+    ) -> SystemConfigs {
         (update_quadtree::<S, N, W, H, K>).ambiguous_with_all()
     }
     #[cfg(feature = "gizmos")]
-    fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>(
-    ) -> NodeConfigs<Box<dyn System<In = (), Out = ()>>> {
+    fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>() -> SystemConfigs {
         use crate::system::show_box;
         (show_box::<S, N, W, H, K>,).ambiguous_with_all()
     }
@@ -122,18 +120,18 @@ macro_rules! impl_tracking_pair {
                 $([<S $i>]: Component + DynCollision + UpdateCollision<[<C $i>]> + Clone),+,
                 $([<C $i>]: Component),+
             {
-                fn update_collision() -> NodeConfigs<Box<dyn System<In = (), Out = ()>>> {
-                    ($(update_collision::<[<S $i>], [<C $i>]>),+,).ambiguous_with_all()
+                fn update_collision() -> SystemConfigs {
+                    ($(update_collision::<[<S $i>], [<C $i>]>),+,).chain()
                 }
                 fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize>(
-                ) -> NodeConfigs<Box<dyn System<In = (), Out = ()>>> {
-                    ($(update_quadtree::<[<S $i>], N, W, H, K>),+,).ambiguous_with_all()
+                ) -> SystemConfigs {
+                    ($(update_quadtree::<[<S $i>], N, W, H, K>),+,).chain()
                 }
                 #[cfg(feature = "gizmos")]
                 fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>(
-                ) -> NodeConfigs<Box<dyn System<In = (), Out = ()>>> {
+                ) -> SystemConfigs {
                     use crate::system::show_box;
-                    ($(show_box::<[<S $i>], N, W, H, K>),+,).ambiguous_with_all()
+                    ($(show_box::<[<S $i>], N, W, H, K>),+,).chain()
                 }
             }
         }
