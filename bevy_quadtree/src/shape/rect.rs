@@ -3,7 +3,6 @@ use crate::{
     Collision, CollisionCircle, CollisionQuery, CollisionRotatedRect, UpdateCollision,
 };
 use bevy::prelude::*;
-use std::ops::Deref;
 
 /// Rectagle shape to be used in the QuadTreePlugin
 /// and as a Component in the ECS.
@@ -14,22 +13,16 @@ use std::ops::Deref;
 /// Rotation is not supported for CollisionRect, see [`CollisionRotatedRect`] instead.
 #[derive(Debug, Component, Clone)]
 pub struct CollisionRect {
-    pub(crate) rect: Rect,
+    pub(crate) center: Vec2,
+    pub(crate) scale: Vec2,
     init_size: Vec2,
-}
-
-impl Deref for CollisionRect {
-    type Target = Rect;
-
-    fn deref(&self) -> &Self::Target {
-        &self.rect
-    }
 }
 
 impl From<Rect> for CollisionRect {
     fn from(rect: Rect) -> Self {
         Self {
-            rect,
+            center: rect.center(),
+            scale: Vec2::ONE,
             init_size: rect.size(),
         }
     }
@@ -46,6 +39,18 @@ impl CollisionRect {
         rect.into()
     }
 
+    pub(crate) fn size(&self) -> Vec2 {
+        self.init_size * self.scale
+    }
+
+    pub(crate) fn min(&self) -> Vec2 {
+        self.center - self.size() / 2.
+    }
+
+    pub(crate) fn max(&self) -> Vec2 {
+        self.center + self.size() / 2.
+    }
+
     /// Set the initial size of the rect, which is used to compute the size with the GlobalTransform's scale.
     pub fn set_init_size(&mut self, size: Vec2) {
         self.init_size = size;
@@ -54,22 +59,26 @@ impl CollisionRect {
 
 impl Collision<CollisionRect> for CollisionRect {
     fn detect(&self, rect: &CollisionRect) -> Relation {
-        if self.min.x < rect.min.x
-            && self.min.y < rect.min.y
-            && self.max.x > rect.max.x
-            && self.max.y > rect.max.y
+        let self_min = self.min();
+        let self_max = self.max();
+        let rect_min = rect.min();
+        let rect_max = rect.max();
+        if self_min.x < rect_min.x
+            && self_min.y < rect_min.y
+            && self_max.x > rect_max.x
+            && self_max.y > rect_max.y
         {
             Relation::Contain
-        } else if self.max.x < rect.min.x
-            || self.min.x > rect.max.x
-            || self.max.y < rect.min.y
-            || self.min.y > rect.max.y
+        } else if self_max.x < rect_min.x
+            || self_min.x > rect_max.x
+            || self_max.y < rect_min.y
+            || self_min.y > rect_max.y
         {
             Relation::Disjoint
-        } else if self.min.x > rect.min.x
-            && self.min.y > rect.min.y
-            && self.max.x < rect.max.x
-            && self.max.y < rect.max.y
+        } else if self_min.x > rect_min.x
+            && self_min.y > rect_min.y
+            && self_max.x < rect_max.x
+            && self_max.y < rect_max.y
         {
             Relation::Contained
         } else {
@@ -100,20 +109,22 @@ impl Collision<CollisionRotatedRect> for CollisionRect {
             min_y = min_y.min(v.y);
             max_y = max_y.max(v.y);
         }
-        if self.max.x < min_x || self.min.x > max_x || self.max.y < min_y || self.min.y > max_y {
+        let self_min = self.min();
+        let self_max = self.max();
+        if self_max.x < min_x || self_min.x > max_x || self_max.y < min_y || self_min.y > max_y {
             return Relation::Disjoint;
-        } else if self.min.x < min_x
-            && max_x < self.max.x
-            && self.min.y < min_y
-            && max_y < self.max.y
+        } else if self_min.x < min_x
+            && max_x < self_max.x
+            && self_min.y < min_y
+            && max_y < self_max.y
         {
             return Relation::Contain;
         }
         let mut vetex = [
-            self.max,
-            Vec2::new(self.min.x, self.max.y),
-            self.min,
-            Vec2::new(self.max.x, self.min.y),
+            self_max,
+            Vec2::new(self_min.x, self_max.y),
+            self_min,
+            Vec2::new(self_max.x, self_min.y),
         ];
         let (mut min_x, mut max_x, mut min_y, mut max_y) = (
             f32::INFINITY,
@@ -165,10 +176,8 @@ impl UpdateCollision<GlobalTransform> for CollisionRect {
                 "Rotation is not supported for CollisionRect,
                 use `CollisionRotatedRect` and add it to plugin generic params instead."
             );
-            rect.rect = Rect::from_center_size(
-                global_transform.translation().truncate(),
-                rect.init_size * global_transform.scale().truncate(),
-            );
+            rect.scale = global_transform.scale().truncate();
+            rect.center = global_transform.translation().truncate();
         }
     }
 }
@@ -179,7 +188,7 @@ impl UpdateCollision<Sprite> for CollisionRect {
         |mut rect, sprite| {
             if let Some(size) = sprite.custom_size {
                 if size != rect.init_size {
-                    rect.set_init_size(size);
+                    rect.init_size = size;
                 }
             } else {
                 warn!("Tracking sprite with no custom size");

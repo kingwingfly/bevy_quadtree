@@ -39,13 +39,15 @@ impl CollisionCircle {
 
 impl Collision<CollisionRect> for CollisionCircle {
     fn detect(&self, rect: &CollisionRect) -> Relation {
-        let i = rect.max - rect.center(); // move rect center to origin and get vertex in Quadrant I
-        let center = (self.center - rect.center()).abs(); // move circle with rect and symmetrize the circle to Quadrant I
+        let rect_max = rect.max();
+        let rect_min = rect.min();
+        let i = rect_max - rect.center; // move rect center to origin and get vertex in Quadrant I
+        let center = (self.center - rect.center).abs(); // move circle with rect and symmetrize the circle to Quadrant I
         let ds = [
-            (self.center - rect.max).length(),
-            (self.center - Vec2::new(rect.min.x, rect.max.y)).length(),
-            (self.center - rect.min).length(),
-            (self.center - Vec2::new(rect.max.x, rect.min.y)).length(),
+            (self.center - rect_max).length(),
+            (self.center - Vec2::new(rect_min.x, rect_max.y)).length(),
+            (self.center - rect_min).length(),
+            (self.center - Vec2::new(rect_max.x, rect_min.y)).length(),
         ];
         if ds.iter().all(|&d| d < self.radius) {
             Relation::Contain

@@ -264,10 +264,11 @@ impl<const N: usize, const K: usize> Node<N, K> {
                 Vec2::new(2., 1.),
             ];
             core::array::from_fn(|i| {
+                let min = this_r.inlet_boundary.min();
                 Arc::new(RwLock::new(Node::new_with_parent(
                     Rect {
-                        min: this_r.inlet_boundary.min + MIN[i] * delta,
-                        max: this_r.inlet_boundary.min + MAX[i] * delta,
+                        min: min + MIN[i] * delta,
+                        max: min + MAX[i] * delta,
                     },
                     Arc::clone(this),
                     i.into(),

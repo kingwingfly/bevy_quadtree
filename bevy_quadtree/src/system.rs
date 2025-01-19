@@ -56,12 +56,12 @@ pub(crate) fn show_box<
     fn draw<const N: usize, const K: usize>(gizmos: &mut Gizmos, node: &ArcNode<N, K>) {
         let node = node.read();
         gizmos.rect_2d(
-            node.inlet_boundary.center(),
+            node.inlet_boundary.center,
             node.inlet_boundary.size(),
             GREEN,
         );
         gizmos.rounded_rect_2d(
-            node.outlet_boundary.center(),
+            node.outlet_boundary.center,
             node.outlet_boundary.size(),
             RED,
         );
@@ -75,7 +75,7 @@ pub(crate) fn show_box<
     for (e, t) in q.iter() {
         let pos = t.translation().truncate();
         if let Some(belong) = tree.entities.read().get(&e) {
-            let center = belong.read().inlet_boundary.center();
+            let center = belong.read().inlet_boundary.center;
             gizmos.line_2d(pos, center, BLUE);
         }
     }
