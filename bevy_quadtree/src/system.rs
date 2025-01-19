@@ -72,7 +72,7 @@ pub(crate) fn show_box<const N: usize, const W: usize, const H: usize, const K: 
             node.inlet_boundary.size(),
             GREEN,
         );
-        gizmos.rect_2d(
+        gizmos.rounded_rect_2d(
             node.outlet_boundary.center(),
             node.outlet_boundary.size(),
             RED,
