@@ -173,6 +173,19 @@ impl UpdateCollision<GlobalTransform> for CollisionRect {
     }
 }
 
+#[cfg(feature = "sprite")]
+impl UpdateCollision<Sprite> for CollisionRect {
+    fn update() -> impl FnOnce(&mut Self, &Sprite) {
+        |rect, sprite| {
+            if let Some(size) = sprite.custom_size {
+                rect.set_init_size(size);
+            } else {
+                warn!("Tracking sprite with no custom size");
+            }
+        }
+    }
+}
+
 impl CollisionQuery for CollisionRect {
     fn disassemble(
         &self,

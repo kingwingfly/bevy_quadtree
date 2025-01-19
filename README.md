@@ -72,6 +72,7 @@ Function:
 
 Features:
 - `gizmos`: show gizmos of the quadtree boundaries.
+- `sprite`: enable `CollisionRect` to track `sprite.size`.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -269,5 +270,5 @@ Project Link: [https://github.com/kingwingfly/bevy_quadtree](https://github.com/
 [product-screenshot]: images/screenshot.png
 [Rust]: https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=Rust&logoColor=orange
 [Rust-url]: https://www.rust-lang.org
-[Bevy]: https://img.shields.io/badge/Bevy-000000?style=for-the-badge&logo=Bevy&logoColor=black
+[Bevy]: https://img.shields.io/badge/Bevy-000000?style=for-the-badge&logo=Bevy&logoColor=white
 [Bevy-url]: https://bevyengine.org

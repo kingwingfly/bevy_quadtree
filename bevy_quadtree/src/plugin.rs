@@ -14,6 +14,8 @@ use bevy::prelude::*;
 /// Adding the shapes which you want to include into [`QuadTree`](crate::QuadTree) and auto-upgrade.
 /// (Do not need to include those only used in the [`QuadTree::query`](crate::QuadTree::query))
 ///
+/// `C`: A component serves as the source of tranform used to update `S` or shapes in `S`.
+///
 /// `N`: The max number of objects each node.
 ///
 /// `W`: The width of the root node boundary.
@@ -28,22 +30,27 @@ use bevy::prelude::*;
 /// use bevy::prelude::*;
 /// use bevy_quadtree::{CollisionCircle, CollisionRect, CollisionRotatedRect, QuadTreePlugin};
 ///
-/// let _ = App::new()
-///    .add_plugins(QuadTreePlugin::<(CollisionCircle, CollisionRotatedRect, CollisionRect), 40, 100, 100, 20>::default())
-///    .add_plugins(QuadTreePlugin::<CollisionCircle, 40, 100, 100>::default());
+/// let mut app = App::new();
+/// app
+///    .add_plugins(QuadTreePlugin::<(CollisionCircle, CollisionRotatedRect, CollisionRect), GlobalTransform, 40, 100, 100, 20>::default());
+/// #[cfg(feature = "sprite")]
+/// app
+///    .add_plugins(QuadTreePlugin::<CollisionRect, Sprite, 40, 100, 100>::default());
 /// ```
 #[derive(Debug)]
-pub struct QuadTreePlugin<S, const N: usize, const W: usize, const H: usize, const K: usize = 10>
+pub struct QuadTreePlugin<S, C, const N: usize, const W: usize, const H: usize, const K: usize = 10>
 where
-    S: AsCollision,
+    S: AsCollision<C>,
+    C: Component,
 {
-    _marker: std::marker::PhantomData<S>,
+    _marker: std::marker::PhantomData<(S, C)>,
 }
 
-impl<S, const N: usize, const W: usize, const H: usize, const K: usize> Default
-    for QuadTreePlugin<S, N, W, H, K>
+impl<S, C, const N: usize, const W: usize, const H: usize, const K: usize> Default
+    for QuadTreePlugin<S, C, N, W, H, K>
 where
-    S: AsCollision,
+    S: AsCollision<C>,
+    C: Component,
 {
     fn default() -> Self {
         Self {
@@ -52,14 +59,15 @@ where
     }
 }
 
-impl<S, const N: usize, const W: usize, const H: usize, const K: usize> Plugin
-    for QuadTreePlugin<S, N, W, H, K>
+impl<S, C, const N: usize, const W: usize, const H: usize, const K: usize> Plugin
+    for QuadTreePlugin<S, C, N, W, H, K>
 where
-    S: DynCollision + UpdateCollision<GlobalTransform> + Component + Clone,
+    S: DynCollision + UpdateCollision<C> + Component + Clone,
+    C: Component,
 {
     fn build(&self, app: &mut App) {
         app.init_resource::<QuadTree<N, W, H, K>>()
-            .add_systems(PreUpdate, update_collision::<S>)
+            .add_systems(PreUpdate, update_collision::<S, C>)
             .add_systems(Update, update_quadtree::<S, N, W, H, K>);
         #[cfg(feature = "gizmos")]
         {
@@ -71,18 +79,19 @@ where
 
 macro_rules! impl_plugin {
     ($($shape: ident),+) => {
-        impl<$($shape),+, const N: usize, const W: usize, const H: usize, const K: usize> Plugin
-            for QuadTreePlugin<($($shape),+,), N, W, H, K>
+        impl<$($shape),+, C, const N: usize, const W: usize, const H: usize, const K: usize> Plugin
+            for QuadTreePlugin<($($shape),+,), C, N, W, H, K>
         where
-            $($shape: DynCollision + UpdateCollision<GlobalTransform> + Component + Clone),+,
-            ($($shape),+,): AsCollision,
+            $($shape: DynCollision + UpdateCollision<C> + Component + Clone),+,
+            C: Component,
+            ($($shape),+,): AsCollision<C>,
         {
             fn build(&self, app: &mut App) {
                 app.init_resource::<QuadTree<N, W, H, K>>()
                     .add_systems(
                         PreUpdate,
                         (
-                            $(update_collision::<$shape>),+
+                            $(update_collision::<$shape, C>),+
                         ),
                     )
                     .add_systems(
@@ -106,12 +115,12 @@ macro_rules! impl_plugin {
     };
 }
 
-impl_plugin!(S1);
-impl_plugin!(S1, S2);
-impl_plugin!(S1, S2, S3);
-impl_plugin!(S1, S2, S3, S4);
-impl_plugin!(S1, S2, S3, S4, S5);
-impl_plugin!(S1, S2, S3, S4, S5, S6);
-impl_plugin!(S1, S2, S3, S4, S5, S6, S7);
-impl_plugin!(S1, S2, S3, S4, S5, S6, S7, S8);
-impl_plugin!(S1, S2, S3, S4, S5, S6, S7, S8, S9);
+impl_plugin!(S0);
+impl_plugin!(S0, S1);
+impl_plugin!(S0, S1, S2);
+impl_plugin!(S0, S1, S2, S3);
+impl_plugin!(S0, S1, S2, S3, S4);
+impl_plugin!(S0, S1, S2, S3, S4, S5);
+impl_plugin!(S0, S1, S2, S3, S4, S5, S6);
+impl_plugin!(S0, S1, S2, S3, S4, S5, S6, S7);
+impl_plugin!(S0, S1, S2, S3, S4, S5, S6, S7, S8);

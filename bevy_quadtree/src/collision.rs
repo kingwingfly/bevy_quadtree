@@ -1,6 +1,6 @@
 //! Collision Detection
 
-use bevy::prelude::{Component, GlobalTransform};
+use bevy::prelude::Component;
 use paste::paste;
 
 use crate::{shape::CollisionRotatedRect, CollisionCircle, CollisionRect};
@@ -46,19 +46,26 @@ impl<T> DynCollision for T where
 {
 }
 
-/// Marker trait for [`S: DynCollision + Component`](crate::collision::DynCollision) and tuple of `S`s
-pub trait AsCollision {}
+/// Marker trait for [`S: DynCollision + UpdateCollision<C> + Component`] and tuple of `S`s
+pub trait AsCollision<C>
+where
+    C: Component,
+{
+}
 
-impl<T> AsCollision for T where
-    T: DynCollision + UpdateCollision<GlobalTransform> + Component + Clone
+impl<T, C> AsCollision<C> for T
+where
+    T: DynCollision + UpdateCollision<C> + Component + Clone,
+    C: Component,
 {
 }
 
 macro_rules! impl_as_collision {
     ($($shape: ident),+) => {
-        impl<$($shape),+> AsCollision for ($($shape),+,)
+        impl<$($shape),+, C> AsCollision<C> for ($($shape),+,)
         where
-            $($shape: DynCollision + UpdateCollision<GlobalTransform> + Component + Clone),+
+            $($shape: DynCollision + UpdateCollision<C> + Component + Clone),+,
+            C: Component,
         {
         }
     };
@@ -165,7 +172,7 @@ where
     }
 }
 
-macro_rules! impl_disassemble {
+macro_rules! impl_collision_query {
     ($($i: literal),+) => {
         paste! {
             impl<$([<S $i>]),+> CollisionQuery for ($([<S $i>]),+,)
@@ -195,12 +202,12 @@ macro_rules! impl_disassemble {
     };
 }
 
-impl_disassemble!(0);
-impl_disassemble!(0, 1);
-impl_disassemble!(0, 1, 2);
-impl_disassemble!(0, 1, 2, 3);
-impl_disassemble!(0, 1, 2, 3, 4);
-impl_disassemble!(0, 1, 2, 3, 4, 5);
-impl_disassemble!(0, 1, 2, 3, 4, 5, 6);
-impl_disassemble!(0, 1, 2, 3, 4, 5, 6, 7);
-impl_disassemble!(0, 1, 2, 3, 4, 5, 6, 7, 8);
+impl_collision_query!(0);
+impl_collision_query!(0, 1);
+impl_collision_query!(0, 1, 2);
+impl_collision_query!(0, 1, 2, 3);
+impl_collision_query!(0, 1, 2, 3, 4);
+impl_collision_query!(0, 1, 2, 3, 4, 5);
+impl_collision_query!(0, 1, 2, 3, 4, 5, 6);
+impl_collision_query!(0, 1, 2, 3, 4, 5, 6, 7);
+impl_collision_query!(0, 1, 2, 3, 4, 5, 6, 7, 8);
