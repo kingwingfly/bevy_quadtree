@@ -23,7 +23,7 @@ pub(crate) fn update_quadtree<
     q: Query<(Entity, &S), Changed<S>>,
     mut r: RemovedComponents<S>,
 ) where
-    QuadTree<N, W, H, K>: Resource,
+    QuadTree<N, W, H, K, ID>: Resource,
     S: Component + DynCollision + Clone,
 {
     q.par_iter().for_each(|(e, s)| {
@@ -47,7 +47,7 @@ pub(crate) fn show_box<
     q: Query<(Entity, &GlobalTransform), With<S>>,
     mut gizmos: Gizmos,
 ) where
-    QuadTree<N, W, H, K>: Resource,
+    QuadTree<N, W, H, K, ID>: Resource,
     S: Component + DynCollision + Clone,
 {
     use crate::node::ArcNode;
