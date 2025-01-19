@@ -278,7 +278,7 @@ Project Link: [https://github.com/kingwingfly/bevy_quadtree](https://github.com/
 [issues-url]: https://github.com/kingwingfly/bevy_quadtree/issues
 [license-shield]: https://img.shields.io/github/license/kingwingfly/bevy_quadtree.svg?style=for-the-badge
 [license-url]: https://github.com/kingwingfly/bevy_quadtree/blob/master/LICENSE.txt
-[product-screenshot]: images/screenshot.png
+[product-screenshot]: images/log.png
 [Rust]: https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=Rust&logoColor=orange
 [Rust-url]: https://www.rust-lang.org
 [Bevy]: https://img.shields.io/badge/Bevy-000000?style=for-the-badge&logo=Bevy&logoColor=white
