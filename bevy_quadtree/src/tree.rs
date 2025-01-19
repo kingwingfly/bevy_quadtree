@@ -21,7 +21,7 @@ pub struct QuadTree<
     const W: usize,
     const H: usize,
     const K: usize = 10,
-    const ID: usize = 1,
+    const ID: usize = 0,
 > {
     pub(crate) root: ArcNode<N, K>,
     pub(crate) entities: Arc<RwLock<EntityHashMap<ArcNode<N, K>>>>,

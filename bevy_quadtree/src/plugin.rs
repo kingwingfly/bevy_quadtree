@@ -51,7 +51,7 @@ pub struct QuadTreePlugin<
     const W: usize,
     const H: usize,
     const K: usize = 10,
-    const ID: usize = 1,
+    const ID: usize = 0,
 > where
     P: TrackingPair,
 {
