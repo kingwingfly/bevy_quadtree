@@ -5,7 +5,7 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = ""
+description = "A quadtree plugin for bevy"
 
 [package.metadata.docs.rs]
 all-features = true
