@@ -49,13 +49,16 @@ impl<T> DynCollision for T where
 /// Marker trait for [`S: DynCollision + Component`](crate::collision::DynCollision) and tuple of `S`s
 pub trait AsCollision {}
 
-impl<T> AsCollision for T where T: DynCollision + UpdateCollision + Component + Clone {}
+impl<T> AsCollision for T where
+    T: DynCollision + UpdateCollision<GlobalTransform> + Component + Clone
+{
+}
 
 macro_rules! impl_as_collision {
     ($($shape: ident),+) => {
         impl<$($shape),+> AsCollision for ($($shape),+,)
         where
-            $($shape: DynCollision + UpdateCollision + Component + Clone),+
+            $($shape: DynCollision + UpdateCollision<GlobalTransform> + Component + Clone),+
         {
         }
     };
@@ -72,10 +75,13 @@ impl_as_collision!(S1, S2, S3, S4, S5, S6, S7, S8);
 impl_as_collision!(S1, S2, S3, S4, S5, S6, S7, S8, S9);
 
 /// Update the attributes of the shape during PreUpdate stage and before Collision Detection.
-pub trait UpdateCollision {
+pub trait UpdateCollision<C>
+where
+    C: Component,
+{
     /// Set the attributes of the shape. Used for updating the position of the shape
     /// in `PreUpdate` stage when `GlobalTransform` changed.
-    fn update() -> impl FnOnce(&mut Self, &GlobalTransform);
+    fn update() -> impl FnOnce(&mut Self, &C);
 }
 
 /// Disassemble the boundary as [`CollisionRect`]s, [`CollisionRotatedRect`]s and [`CollisionCircle`]s as query boundary.

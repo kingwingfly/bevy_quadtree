@@ -10,7 +10,9 @@ use bevy::prelude::*;
 /// A Bevy plugin for quadtree.
 /// # Type Parameters
 /// `S`: Shapes implemented [`AsCollision`], are used to perform Collision Detection,
-/// storing the shape and position info, also serving as a marker component in ECS queries. (can be tuple)
+/// storing the shape and position info, also serving as a marker component in ECS queries (can be tuple).
+/// Adding the shapes which you want to include into [`QuadTree`](crate::QuadTree) and auto-upgrade.
+/// (Do not need to include those only used in the [`QuadTree::query`](crate::QuadTree::query))
 ///
 /// `N`: The max number of objects each node.
 ///
@@ -53,7 +55,7 @@ where
 impl<S, const N: usize, const W: usize, const H: usize, const K: usize> Plugin
     for QuadTreePlugin<S, N, W, H, K>
 where
-    S: DynCollision + UpdateCollision + Component + Clone,
+    S: DynCollision + UpdateCollision<GlobalTransform> + Component + Clone,
 {
     fn build(&self, app: &mut App) {
         app.init_resource::<QuadTree<N, W, H, K>>()
@@ -72,7 +74,7 @@ macro_rules! impl_plugin {
         impl<$($shape),+, const N: usize, const W: usize, const H: usize, const K: usize> Plugin
             for QuadTreePlugin<($($shape),+,), N, W, H, K>
         where
-            $($shape: DynCollision + UpdateCollision + Component + Clone),+,
+            $($shape: DynCollision + UpdateCollision<GlobalTransform> + Component + Clone),+,
             ($($shape),+,): AsCollision,
         {
             fn build(&self, app: &mut App) {

@@ -156,7 +156,7 @@ impl Collision<CollisionCircle> for CollisionRect {
     }
 }
 
-impl UpdateCollision for CollisionRect {
+impl UpdateCollision<GlobalTransform> for CollisionRect {
     fn update() -> impl FnOnce(&mut Self, &GlobalTransform) {
         |rect, global_transform| {
             debug_assert_eq!(

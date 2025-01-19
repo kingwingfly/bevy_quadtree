@@ -139,7 +139,7 @@ impl Collision<CollisionCircle> for CollisionRotatedRect {
     }
 }
 
-impl UpdateCollision for CollisionRotatedRect {
+impl UpdateCollision<GlobalTransform> for CollisionRotatedRect {
     fn update() -> impl FnOnce(&mut Self, &GlobalTransform) {
         |rect, global_transform| {
             debug_assert_eq!(

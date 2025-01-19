@@ -4,10 +4,10 @@ use bevy::prelude::*;
 pub(crate) fn update_collision<S>(
     mut q: Query<(&GlobalTransform, &mut S), Changed<GlobalTransform>>,
 ) where
-    S: Component + UpdateCollision + Clone,
+    S: Component + UpdateCollision<GlobalTransform> + Clone,
 {
     for (transform, mut s) in q.iter_mut() {
-        <S as UpdateCollision>::update()(s.as_mut(), transform);
+        <S as UpdateCollision<GlobalTransform>>::update()(s.as_mut(), transform);
     }
 }
 

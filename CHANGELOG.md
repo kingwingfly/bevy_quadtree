@@ -9,6 +9,6 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
-### [0.0.1] - 2025-XX-XX
+### [0.15.1] - 2025-01-19
 
 - MVP
