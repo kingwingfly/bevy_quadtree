@@ -88,7 +88,7 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize, const ID: u
     /// The rule of the relation is defined in [`CollisionQuery::query`] and [`query`](crate::query).
     ///
     /// [`QRelation`]: implemented for [`Disjoint`](crate::Disjoint), [`Overlap`](crate::Overlap),
-    /// [`Contain`](crate::Contain), [`Contained`](crate::Contained), [`QOr`](crate::QOr), [`QNot`](crate::QNot) and tuple of them.
+    /// [`Contain`](crate::Contain), [`Contained`](crate::Contained), [`QOr`](crate::QOr), [`QNot`](crate::QNot).
     pub fn query<S, Q>(&self, boundary: &S) -> EntityHashSet
     where
         S: CollisionQuery,

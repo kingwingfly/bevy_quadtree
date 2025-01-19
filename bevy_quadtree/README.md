@@ -193,7 +193,7 @@ xx.observe(
             let delta = Vec2::new(ev.width * FONT_WIDTH, (ev.height - 1.) * FONT_HEIGHT);
             s.custom_size = Some(CUSTOM_SIZE + delta);
             // the plugin default only track `Changed<GlobalTransform>`
-            // without feature `sprite` enable, you can also do this way.
+            // without feature `sprite` enabled, you can also do this way.
             c.set_init_size(CUSTOM_SIZE + delta);
         }
     },

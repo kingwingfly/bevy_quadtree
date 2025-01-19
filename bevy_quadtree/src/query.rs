@@ -8,7 +8,7 @@ pub struct QOr<T>(core::marker::PhantomData<T>);
 /// `Not` filter used in `QuadTree::query`
 pub struct QNot<T>(core::marker::PhantomData<T>);
 
-/// implemented for [`Disjoint`], [`Overlap`], [`Contain`], [`Contained`], [`QOr`], [`QNot`] and tuple of them.
+/// implemented for [`Disjoint`], [`Overlap`], [`Contain`], [`Contained`], [`QOr`], [`QNot`].
 ///
 /// There is no `QAnd` because all the filters do not overlap, e.g. `QAnd<(Disjoint, Contain)>` is always empty.
 #[allow(missing_docs)]
@@ -191,15 +191,10 @@ macro_rules! impl_or_relation {
     };
 }
 
-impl_or_relation!(R1);
-impl_or_relation!(R1, R2);
-impl_or_relation!(R1, R2, R3);
-impl_or_relation!(R1, R2, R3, R4);
-impl_or_relation!(R1, R2, R3, R4, R5);
-impl_or_relation!(R1, R2, R3, R4, R5, R6);
-impl_or_relation!(R1, R2, R3, R4, R5, R6, R7);
-impl_or_relation!(R1, R2, R3, R4, R5, R6, R7, R8);
-impl_or_relation!(R1, R2, R3, R4, R5, R6, R7, R8, R9);
+impl_or_relation!(R0);
+impl_or_relation!(R0, R1);
+impl_or_relation!(R0, R1, R2);
+impl_or_relation!(R0, R1, R2, R3);
 
 macro_rules! impl_not_relation {
     ($($r: ident), +) => {
