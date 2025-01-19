@@ -21,8 +21,6 @@ use bevy::prelude::*;
 /// `K`: For `LooseQuadTree`, K / 10 = outlet_boundary / inlet_boundary. Set K to 10 by default and 20 is founded best.
 /// K should >= 10. Only if the object move and is **no longer completely contained** by the outlet_boundary will it be inserted again.
 ///
-/// `CD`: The time interval (in ms) for updating the quadtree.
-///
 /// # Example
 /// ```no_run
 /// use bevy::prelude::*;
@@ -33,21 +31,15 @@ use bevy::prelude::*;
 ///    .add_plugins(QuadTreePlugin::<CollisionCircle, 40, 100, 100>::default());
 /// ```
 #[derive(Debug)]
-pub struct QuadTreePlugin<
-    S,
-    const N: usize,
-    const W: usize,
-    const H: usize,
-    const K: usize = 10,
-    const CD: usize = 30,
-> where
+pub struct QuadTreePlugin<S, const N: usize, const W: usize, const H: usize, const K: usize = 10>
+where
     S: AsCollision,
 {
     _marker: std::marker::PhantomData<S>,
 }
 
-impl<S, const N: usize, const W: usize, const H: usize, const K: usize, const CD: usize> Default
-    for QuadTreePlugin<S, N, W, H, K, CD>
+impl<S, const N: usize, const W: usize, const H: usize, const K: usize> Default
+    for QuadTreePlugin<S, N, W, H, K>
 where
     S: AsCollision,
 {
@@ -58,15 +50,15 @@ where
     }
 }
 
-impl<S, const N: usize, const W: usize, const H: usize, const K: usize, const CD: usize> Plugin
-    for QuadTreePlugin<S, N, W, H, K, CD>
+impl<S, const N: usize, const W: usize, const H: usize, const K: usize> Plugin
+    for QuadTreePlugin<S, N, W, H, K>
 where
     S: DynCollision + UpdateCollision + Component + Clone,
 {
     fn build(&self, app: &mut App) {
         app.init_resource::<QuadTree<N, W, H, K>>()
-            .add_systems(PreUpdate, update_collision::<S, CD>)
-            .add_systems(Update, update_quadtree::<S, N, W, H, K, CD>);
+            .add_systems(PreUpdate, update_collision::<S>)
+            .add_systems(Update, update_quadtree::<S, N, W, H, K>);
         #[cfg(feature = "gizmos")]
         {
             use crate::system::show_box;
@@ -77,8 +69,8 @@ where
 
 macro_rules! impl_plugin {
     ($($shape: ident),+) => {
-        impl<$($shape),+, const N: usize, const W: usize, const H: usize, const K: usize, const CD: usize> Plugin
-            for QuadTreePlugin<($($shape),+,), N, W, H, K, CD>
+        impl<$($shape),+, const N: usize, const W: usize, const H: usize, const K: usize> Plugin
+            for QuadTreePlugin<($($shape),+,), N, W, H, K>
         where
             $($shape: DynCollision + UpdateCollision + Component + Clone),+,
             ($($shape),+,): AsCollision,
@@ -88,13 +80,13 @@ macro_rules! impl_plugin {
                     .add_systems(
                         PreUpdate,
                         (
-                            $(update_collision::<$shape, CD>),+
+                            $(update_collision::<$shape>),+
                         ),
                     )
                     .add_systems(
                         Update,
                         (
-                            $(update_quadtree::<$shape, N, W, H, K, CD>),+
+                            $(update_quadtree::<$shape, N, W, H, K>),+
                         ),
                 );
                 #[cfg(feature = "gizmos")]
