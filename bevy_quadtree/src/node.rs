@@ -12,7 +12,7 @@ use bevy::{
 };
 use core::fmt;
 use parking_lot::RwLock;
-use std::sync::{Arc, RwLockReadGuard};
+use std::sync::Arc;
 
 /// type alias for `Arc<RwLock<Node<N, K>>>`
 pub type ArcNode<const N: usize, const K: usize> = Arc<RwLock<Node<N, K>>>;

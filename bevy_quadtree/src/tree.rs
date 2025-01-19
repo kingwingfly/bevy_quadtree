@@ -18,7 +18,7 @@ use std::sync::Arc;
 #[derive(Resource)]
 pub struct QuadTree<const N: usize, const W: usize, const H: usize, const K: usize = 10> {
     pub(crate) root: ArcNode<N, K>,
-    entities: Arc<RwLock<EntityHashMap<ArcNode<N, K>>>>,
+    pub(crate) entities: Arc<RwLock<EntityHashMap<ArcNode<N, K>>>>,
 }
 
 impl<const N: usize, const W: usize, const H: usize, const K: usize> fmt::Debug

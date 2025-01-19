@@ -70,7 +70,7 @@ where
         #[cfg(feature = "gizmos")]
         {
             use crate::system::show_box;
-            app.add_systems(Update, show_box::<N, W, H, K>);
+            app.add_systems(Update, show_box::<S, N, W, H, K>);
         }
     }
 }
@@ -100,7 +100,12 @@ macro_rules! impl_plugin {
                 #[cfg(feature = "gizmos")]
                 {
                     use crate::system::show_box;
-                    app.add_systems(Update, show_box::<N, W, H, K>);
+                    app.add_systems(
+                        Update,
+                        (
+                            $(show_box::<$shape, N, W, H, K>),+
+                        )
+                    );
                 }
             }
         }

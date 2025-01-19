@@ -56,11 +56,13 @@ pub(crate) fn update_quadtree<
 }
 
 #[cfg(feature = "gizmos")]
-pub(crate) fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>(
+pub(crate) fn show_box<S, const N: usize, const W: usize, const H: usize, const K: usize>(
     tree: Res<QuadTree<N, W, H, K>>,
+    q: Query<(Entity, &GlobalTransform), With<S>>,
     mut gizmos: Gizmos,
 ) where
     QuadTree<N, W, H, K>: Resource,
+    S: Component + DynCollision + Clone,
 {
     use crate::node::ArcNode;
     use bevy::color::palettes::css::*;
@@ -84,4 +86,11 @@ pub(crate) fn show_box<const N: usize, const W: usize, const H: usize, const K: 
         }
     }
     draw(&mut gizmos, &tree.root);
+    for (e, t) in q.iter() {
+        let pos = t.translation().truncate();
+        if let Some(belong) = tree.entities.read().get(&e) {
+            let center = belong.read().inlet_boundary.center();
+            gizmos.line_2d(pos, center, BLUE);
+        }
+    }
 }
