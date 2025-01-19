@@ -1,20 +1,24 @@
 //! QuadTree Plugin
 
-use crate::collision::AsCollision;
 use crate::collision::DynCollision;
 use crate::system::{update_collision, update_quadtree};
 use crate::tree::QuadTree;
 use crate::UpdateCollision;
+use bevy::ecs::schedule::NodeConfigs;
 use bevy::prelude::*;
 
 /// A Bevy plugin for quadtree.
 /// # Type Parameters
-/// `S`: Shapes implemented [`AsCollision`], are used to perform Collision Detection,
+/// `P`: `(S, C)` pair (or tuple of `(S, C)`s) where `S` (collision shape) can updated by `C` (component).
+///
+/// `S: Component + DynCollision + UpdateCollision<C> + Clone`,
+/// such as [`CollisionCircle, CollisionRect, CollisionRotatedRect`](crate::shape).
+/// are used to perform Collision Detection,
 /// storing the shape and position info, also serving as a marker component in ECS queries (can be tuple).
-/// Adding the shapes which you want to include into [`QuadTree`](crate::QuadTree) and auto-upgrade.
+/// Add the shapes which you wanna include into [`QuadTree`] and auto-upgrade.
 /// (Do not need to include those only used in the [`QuadTree::query`](crate::QuadTree::query))
 ///
-/// `C`: A component serves as the source of tranform used to update `S` or shapes in `S`.
+/// `C: Component`
 ///
 /// `N`: The max number of objects each node.
 ///
@@ -30,27 +34,27 @@ use bevy::prelude::*;
 /// use bevy::prelude::*;
 /// use bevy_quadtree::{CollisionCircle, CollisionRect, CollisionRotatedRect, QuadTreePlugin};
 ///
-/// let mut app = App::new();
-/// app
-///    .add_plugins(QuadTreePlugin::<(CollisionCircle, CollisionRotatedRect, CollisionRect), GlobalTransform, 40, 100, 100, 20>::default());
 /// #[cfg(feature = "sprite")]
-/// app
-///    .add_plugins(QuadTreePlugin::<CollisionRect, Sprite, 40, 100, 100>::default());
+/// App::new()
+///    .add_plugins(QuadTreePlugin::<(
+///             (CollisionCircle, GlobalTransform),
+///             (CollisionRotatedRect, GlobalTransform),
+///             (CollisionRect, Sprite),
+///         ),
+///         40, 100, 100, 20>::default());
 /// ```
 #[derive(Debug)]
-pub struct QuadTreePlugin<S, C, const N: usize, const W: usize, const H: usize, const K: usize = 10>
+pub struct QuadTreePlugin<P, const N: usize, const W: usize, const H: usize, const K: usize = 10>
 where
-    S: AsCollision<C>,
-    C: Component,
+    P: TrackingPair,
 {
-    _marker: std::marker::PhantomData<(S, C)>,
+    _marker: std::marker::PhantomData<P>,
 }
 
-impl<S, C, const N: usize, const W: usize, const H: usize, const K: usize> Default
-    for QuadTreePlugin<S, C, N, W, H, K>
+impl<P, const N: usize, const W: usize, const H: usize, const K: usize> Default
+    for QuadTreePlugin<P, N, W, H, K>
 where
-    S: AsCollision<C>,
-    C: Component,
+    P: TrackingPair,
 {
     fn default() -> Self {
         Self {
@@ -59,68 +63,89 @@ where
     }
 }
 
-impl<S, C, const N: usize, const W: usize, const H: usize, const K: usize> Plugin
-    for QuadTreePlugin<S, C, N, W, H, K>
+impl<P, const N: usize, const W: usize, const H: usize, const K: usize> Plugin
+    for QuadTreePlugin<P, N, W, H, K>
 where
-    S: DynCollision + UpdateCollision<C> + Component + Clone,
-    C: Component,
+    P: TrackingPair,
 {
     fn build(&self, app: &mut App) {
         app.init_resource::<QuadTree<N, W, H, K>>()
-            .add_systems(PreUpdate, update_collision::<S, C>)
-            .add_systems(Update, update_quadtree::<S, N, W, H, K>);
+            .add_systems(PreUpdate, P::update_collision())
+            .add_systems(Update, P::update_quadtree::<N, W, H, K>());
         #[cfg(feature = "gizmos")]
         {
-            use crate::system::show_box;
-            app.add_systems(Update, show_box::<S, N, W, H, K>);
+            app.add_systems(PostUpdate, P::show_box::<N, W, H, K>());
         }
     }
 }
 
-macro_rules! impl_plugin {
-    ($($shape: ident),+) => {
-        impl<$($shape),+, C, const N: usize, const W: usize, const H: usize, const K: usize> Plugin
-            for QuadTreePlugin<($($shape),+,), C, N, W, H, K>
-        where
-            $($shape: DynCollision + UpdateCollision<C> + Component + Clone),+,
-            C: Component,
-            ($($shape),+,): AsCollision<C>,
-        {
-            fn build(&self, app: &mut App) {
-                app.init_resource::<QuadTree<N, W, H, K>>()
-                    .add_systems(
-                        PreUpdate,
-                        (
-                            $(update_collision::<$shape, C>),+
-                        ),
-                    )
-                    .add_systems(
-                        Update,
-                        (
-                            $(update_quadtree::<$shape, N, W, H, K>),+
-                        ),
-                );
+/// `(S, C)` pair where `S` is collision shape and `C` is the component used to update `S`.
+/// Also implemented for tuple of `(S, C)` pairs.
+pub trait TrackingPair: Send + Sync + 'static {
+    /// return the system to update collision
+    fn update_collision() -> NodeConfigs<Box<dyn System<In = (), Out = ()>>>;
+    /// return the system to update quadtree
+    fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize>(
+    ) -> NodeConfigs<Box<dyn System<In = (), Out = ()>>>;
+    /// return the system to show box
+    #[cfg(feature = "gizmos")]
+    fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>(
+    ) -> NodeConfigs<Box<dyn System<In = (), Out = ()>>>;
+}
+
+impl<S, C> TrackingPair for (S, C)
+where
+    S: Component + DynCollision + UpdateCollision<C> + Clone,
+    C: Component,
+{
+    fn update_collision() -> NodeConfigs<Box<dyn System<In = (), Out = ()>>> {
+        (update_collision::<S, C>,).ambiguous_with_all()
+    }
+
+    fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize>(
+    ) -> NodeConfigs<Box<dyn System<In = (), Out = ()>>> {
+        (update_quadtree::<S, N, W, H, K>).ambiguous_with_all()
+    }
+    #[cfg(feature = "gizmos")]
+    fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>(
+    ) -> NodeConfigs<Box<dyn System<In = (), Out = ()>>> {
+        use crate::system::show_box;
+        (show_box::<S, N, W, H, K>,).ambiguous_with_all()
+    }
+}
+
+macro_rules! impl_tracking_pair {
+    ($($i: literal),+) => {
+        paste::paste! {
+            impl<$([<S $i>]),+, $([<C $i>]),+> TrackingPair for ($(([<S $i>], [<C $i>])),+,)
+            where
+                $([<S $i>]: Component + DynCollision + UpdateCollision<[<C $i>]> + Clone),+,
+                $([<C $i>]: Component),+
+            {
+                fn update_collision() -> NodeConfigs<Box<dyn System<In = (), Out = ()>>> {
+                    ($(update_collision::<[<S $i>], [<C $i>]>),+,).ambiguous_with_all()
+                }
+                fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize>(
+                ) -> NodeConfigs<Box<dyn System<In = (), Out = ()>>> {
+                    ($(update_quadtree::<[<S $i>], N, W, H, K>),+,).ambiguous_with_all()
+                }
                 #[cfg(feature = "gizmos")]
-                {
+                fn show_box<const N: usize, const W: usize, const H: usize, const K: usize>(
+                ) -> NodeConfigs<Box<dyn System<In = (), Out = ()>>> {
                     use crate::system::show_box;
-                    app.add_systems(
-                        Update,
-                        (
-                            $(show_box::<$shape, N, W, H, K>),+
-                        )
-                    );
+                    ($(show_box::<[<S $i>], N, W, H, K>),+,).ambiguous_with_all()
                 }
             }
         }
     };
 }
 
-impl_plugin!(S0);
-impl_plugin!(S0, S1);
-impl_plugin!(S0, S1, S2);
-impl_plugin!(S0, S1, S2, S3);
-impl_plugin!(S0, S1, S2, S3, S4);
-impl_plugin!(S0, S1, S2, S3, S4, S5);
-impl_plugin!(S0, S1, S2, S3, S4, S5, S6);
-impl_plugin!(S0, S1, S2, S3, S4, S5, S6, S7);
-impl_plugin!(S0, S1, S2, S3, S4, S5, S6, S7, S8);
+impl_tracking_pair!(0);
+impl_tracking_pair!(0, 1);
+impl_tracking_pair!(0, 1, 2);
+impl_tracking_pair!(0, 1, 2, 3);
+impl_tracking_pair!(0, 1, 2, 3, 4);
+impl_tracking_pair!(0, 1, 2, 3, 4, 5);
+impl_tracking_pair!(0, 1, 2, 3, 4, 5, 6);
+impl_tracking_pair!(0, 1, 2, 3, 4, 5, 6, 7);
+impl_tracking_pair!(0, 1, 2, 3, 4, 5, 6, 7, 8);

@@ -46,41 +46,6 @@ impl<T> DynCollision for T where
 {
 }
 
-/// Marker trait for [`S: DynCollision + UpdateCollision<C> + Component`] and tuple of `S`s
-pub trait AsCollision<C>
-where
-    C: Component,
-{
-}
-
-impl<T, C> AsCollision<C> for T
-where
-    T: DynCollision + UpdateCollision<C> + Component + Clone,
-    C: Component,
-{
-}
-
-macro_rules! impl_as_collision {
-    ($($shape: ident),+) => {
-        impl<$($shape),+, C> AsCollision<C> for ($($shape),+,)
-        where
-            $($shape: DynCollision + UpdateCollision<C> + Component + Clone),+,
-            C: Component,
-        {
-        }
-    };
-}
-
-impl_as_collision!(S1);
-impl_as_collision!(S1, S2);
-impl_as_collision!(S1, S2, S3);
-impl_as_collision!(S1, S2, S3, S4);
-impl_as_collision!(S1, S2, S3, S4, S5);
-impl_as_collision!(S1, S2, S3, S4, S5, S6);
-impl_as_collision!(S1, S2, S3, S4, S5, S6, S7);
-impl_as_collision!(S1, S2, S3, S4, S5, S6, S7, S8);
-impl_as_collision!(S1, S2, S3, S4, S5, S6, S7, S8, S9);
-
 /// Update the attributes of the shape during PreUpdate stage and before Collision Detection.
 pub trait UpdateCollision<C>
 where
