@@ -144,13 +144,13 @@ macro_rules! impl_tracking_pair {
                 }
                 fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
                 ) -> SystemConfigs {
-                    ($(update_quadtree::<[<S $i>], N, W, H, K, ID>),+,).chain()
+                    ($(update_quadtree::<[<S $i>], N, W, H, K, ID>),+,).ambiguous_with_all()
                 }
                 #[cfg(feature = "gizmos")]
                 fn show_box<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
                 ) -> SystemConfigs {
                     use crate::system::show_box;
-                    ($(show_box::<[<S $i>], N, W, H, K, ID>),+,).chain()
+                    ($(show_box::<[<S $i>], N, W, H, K, ID>),+,).ambiguous_with_all()
                 }
             }
         }
