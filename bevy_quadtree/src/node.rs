@@ -12,7 +12,7 @@ use bevy::{
 };
 use core::fmt;
 use parking_lot::RwLock;
-use std::sync::Arc;
+use std::sync::{Arc, RwLockReadGuard};
 
 /// type alias for `Arc<RwLock<Node<N, K>>>`
 pub type ArcNode<const N: usize, const K: usize> = Arc<RwLock<Node<N, K>>>;
@@ -95,6 +95,14 @@ impl<const N: usize, const K: usize> Node<N, K> {
                 .map_or(0, |c| c.iter().map(|n| n.read().total()).sum())
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.len() == 0
+            && self
+                .children
+                .as_ref()
+                .map_or(true, |c| c.iter().all(|n| n.read().is_empty()))
+    }
+
     pub(crate) fn update(
         this: &ArcNode<N, K>,
         entity: Entity,
@@ -157,7 +165,7 @@ impl<const N: usize, const K: usize> Node<N, K> {
         changed: &mut Vec<(Entity, ArcNode<N, K>)>,
         omit: &mut Vec<Pos>,
     ) {
-        if ALL_CHILDREN.iter().any(|p| !omit.contains(p)) && !omit.contains(&Pos::C) {
+        if !omit.contains(&Pos::C) && ALL_CHILDREN.iter().any(|p| !omit.contains(p)) {
             {
                 let this_r = this.read();
                 if this_r.children.is_none() {
@@ -285,21 +293,20 @@ impl<const N: usize, const K: usize> Node<N, K> {
 
     fn merge_up(this: &ArcNode<N, K>) {
         let this_r = this.read();
-        if this_r.len() != 0 && this_r.total() != 0 {
+        if !this_r.is_empty() {
             return;
         }
         if let Some(p) = this_r.parent.as_ref() {
             let mut p_w = p.write();
-            if p_w
-                .children
-                .as_ref()
-                .unwrap()
-                .iter()
-                .all(|c| c.read().total() == 0)
-            {
-                p_w.children = None;
-                drop(p_w);
-                Self::merge_up(p);
+            if let Some(children) = p_w.children.as_ref() {
+                if core::array::from_fn::<_, 4, _>(|i| children[i].read())
+                    .iter()
+                    .all(|c| c.is_empty())
+                {
+                    p_w.children = None;
+                    drop(p_w);
+                    Self::merge_up(p);
+                }
             }
         }
     }
