@@ -104,7 +104,7 @@ use bevy_quadtree::{QuadTreePlugin, CollisionCircle, CollisionRect};
 
 fn main() {
     #[cfg(feature = "sprite")]
-    App::build()
+    App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(QuadTreePlugin::<(
             (CollisionCircle, GlobalTransform), (CollisionRect, Sprite), (CollisionRect, GlobalTransform)),

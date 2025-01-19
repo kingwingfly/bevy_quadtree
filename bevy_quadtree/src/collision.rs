@@ -1,6 +1,6 @@
 //! Collision Detection
 
-use bevy::prelude::Component;
+use bevy::prelude::{Component, Mut};
 use paste::paste;
 
 use crate::{shape::CollisionRotatedRect, CollisionCircle, CollisionRect};
@@ -53,7 +53,7 @@ where
 {
     /// Set the attributes of the shape. Used for updating the position of the shape
     /// in `PreUpdate` stage when `GlobalTransform` changed.
-    fn update() -> impl FnOnce(&mut Self, &C);
+    fn update() -> impl FnOnce(Mut<Self>, &C);
 }
 
 /// Disassemble the boundary as [`CollisionRect`]s, [`CollisionRotatedRect`]s and [`CollisionCircle`]s as query boundary.

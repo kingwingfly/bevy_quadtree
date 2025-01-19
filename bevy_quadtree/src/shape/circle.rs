@@ -102,8 +102,8 @@ impl Collision<CollisionCircle> for CollisionCircle {
 }
 
 impl UpdateCollision<GlobalTransform> for CollisionCircle {
-    fn update() -> impl FnOnce(&mut Self, &GlobalTransform) {
-        |circle, global_transform| {
+    fn update() -> impl FnOnce(Mut<Self>, &GlobalTransform) {
+        |mut circle, global_transform| {
             circle.center = global_transform.translation().truncate();
             debug_assert_eq!(
                 global_transform.scale().x, global_transform.scale().y,

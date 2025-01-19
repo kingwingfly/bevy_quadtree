@@ -3,7 +3,7 @@ members = ["bevy_quadtree"]
 resolver = "2"
 
 [workspace.package]
-version = "0.15.1"
+version = "0.15.1-alpha1"
 authors = ["Louis <836250617@qq.com>"]
 description = "A quadtree plugin for bevy"
 license = "MIT"

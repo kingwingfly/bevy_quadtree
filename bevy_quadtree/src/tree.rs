@@ -65,9 +65,7 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize> QuadTree<N,
             }
         };
         let mut entities = self.entities.write();
-        for (e, n) in new_node {
-            entities.insert(e, n);
-        }
+        entities.extend(new_node);
     }
 
     pub(crate) fn remove(&self, entity: &Entity) {

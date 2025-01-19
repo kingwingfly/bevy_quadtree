@@ -1,13 +1,13 @@
 use crate::{collision::DynCollision, tree::QuadTree, UpdateCollision};
 use bevy::prelude::*;
 
-pub(crate) fn update_collision<S, C>(mut q: Query<(&C, &mut S), Changed<C>>)
+pub(crate) fn update_collision<S, C>(mut q: Query<(&mut S, &C), Changed<C>>)
 where
     S: Component + UpdateCollision<C> + Clone,
     C: Component,
 {
-    for (c, mut s) in q.iter_mut() {
-        <S as UpdateCollision<C>>::update()(s.as_mut(), c);
+    for (s, c) in q.iter_mut() {
+        <S as UpdateCollision<C>>::update()(s, c);
     }
 }
 

@@ -14,11 +14,11 @@ use bevy::prelude::*;
 /// `S: Component + DynCollision + UpdateCollision<C> + Clone`,
 /// such as [`CollisionCircle, CollisionRect, CollisionRotatedRect`](crate::shape).
 /// are used to perform Collision Detection,
-/// storing the shape and position info, also serving as a marker component in ECS queries (can be tuple).
+/// storing the shape and position info, also serving as a marker component in ECS queries.
 /// Add the shapes which you wanna include into [`QuadTree`] and auto-upgrade.
 /// (Do not need to include those only used in the [`QuadTree::query`](crate::QuadTree::query))
 ///
-/// `C: Component`
+/// `C: Component`, such as `GlobalTransform`.
 ///
 /// `N`: The max number of objects each node.
 ///

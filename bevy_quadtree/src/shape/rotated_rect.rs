@@ -140,8 +140,8 @@ impl Collision<CollisionCircle> for CollisionRotatedRect {
 }
 
 impl UpdateCollision<GlobalTransform> for CollisionRotatedRect {
-    fn update() -> impl FnOnce(&mut Self, &GlobalTransform) {
-        |rect, global_transform| {
+    fn update() -> impl FnOnce(Mut<Self>, &GlobalTransform) {
+        |mut rect, global_transform| {
             debug_assert_eq!(
                 global_transform.rotation().to_axis_angle().0.z,
                 1.,

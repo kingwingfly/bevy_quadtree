@@ -157,8 +157,8 @@ impl Collision<CollisionCircle> for CollisionRect {
 }
 
 impl UpdateCollision<GlobalTransform> for CollisionRect {
-    fn update() -> impl FnOnce(&mut Self, &GlobalTransform) {
-        |rect, global_transform| {
+    fn update() -> impl FnOnce(Mut<Self>, &GlobalTransform) {
+        |mut rect, global_transform| {
             debug_assert_eq!(
                 global_transform.rotation(),
                 Quat::IDENTITY,
@@ -175,10 +175,12 @@ impl UpdateCollision<GlobalTransform> for CollisionRect {
 
 #[cfg(feature = "sprite")]
 impl UpdateCollision<Sprite> for CollisionRect {
-    fn update() -> impl FnOnce(&mut Self, &Sprite) {
-        |rect, sprite| {
+    fn update() -> impl FnOnce(Mut<Self>, &Sprite) {
+        |mut rect, sprite| {
             if let Some(size) = sprite.custom_size {
-                rect.set_init_size(size);
+                if size != rect.init_size {
+                    rect.set_init_size(size);
+                }
             } else {
                 warn!("Tracking sprite with no custom size");
             }
