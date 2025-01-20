@@ -35,7 +35,7 @@ pub(crate) fn update_quadtree<
 }
 
 #[cfg(feature = "gizmos")]
-pub(crate) fn show_box<
+pub(crate) fn show_boundary<
     S,
     const N: usize,
     const W: usize,

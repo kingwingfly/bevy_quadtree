@@ -13,6 +13,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 
 - performance improvement
 - fix bug in feature `sprite`
+- fix bug caused by duplicate added updating system
 
 ## [0.15.1-alpha3] - 2025-01-20
 

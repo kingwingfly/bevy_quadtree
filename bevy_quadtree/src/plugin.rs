@@ -81,7 +81,7 @@ where
             .add_systems(Update, P::update_quadtree::<N, W, H, K, ID>());
         #[cfg(feature = "gizmos")]
         {
-            app.add_systems(PostUpdate, P::show_box::<N, W, H, K, ID>());
+            app.add_systems(PostUpdate, P::show_boundary::<N, W, H, K, ID>());
         }
     }
 }
@@ -101,68 +101,225 @@ pub trait TrackingPair: Send + Sync + 'static {
     >() -> SystemConfigs;
     /// return the system to show box
     #[cfg(feature = "gizmos")]
-    fn show_box<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
-    ) -> SystemConfigs;
-}
-
-impl<S, C> TrackingPair for (S, C)
-where
-    S: Component + DynCollision + UpdateCollision<C> + Clone,
-    C: Component,
-{
-    fn update_collision() -> SystemConfigs {
-        (update_collision::<S, C>,).ambiguous_with_all()
-    }
-
-    fn update_quadtree<
+    fn show_boundary<
         const N: usize,
         const W: usize,
         const H: usize,
         const K: usize,
         const ID: usize,
-    >() -> SystemConfigs {
-        (update_quadtree::<S, N, W, H, K, ID>).ambiguous_with_all()
-    }
-    #[cfg(feature = "gizmos")]
-    fn show_box<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
-    ) -> SystemConfigs {
-        use crate::system::show_box;
-        (show_box::<S, N, W, H, K, ID>,).ambiguous_with_all()
-    }
+    >() -> SystemConfigs;
+    /// return the shape id, to ensure no duplicate shape updating system added
+    #[cfg(debug_assertions)]
+    fn shape_id() -> std::any::TypeId;
 }
 
 macro_rules! impl_tracking_pair {
+    ($c: ty) => {
+        impl<S> TrackingPair for (S, $c)
+        where
+            S: Component + DynCollision + UpdateCollision<$c> + Clone,
+        {
+            fn update_collision() -> SystemConfigs {
+                update_collision::<S, $c>.ambiguous_with_all()
+            }
+            fn update_quadtree<
+                const N: usize,
+                const W: usize,
+                const H: usize,
+                const K: usize,
+                const ID: usize,
+            >() -> SystemConfigs {
+                update_quadtree::<S, N, W, H, K, ID>.ambiguous_with_all()
+            }
+            #[cfg(feature = "gizmos")]
+            fn show_boundary<
+                const N: usize,
+                const W: usize,
+                const H: usize,
+                const K: usize,
+                const ID: usize,
+            >() -> SystemConfigs {
+                use crate::system::show_boundary;
+                show_boundary::<S, N, W, H, K, ID>.ambiguous_with_all()
+            }
+            #[cfg(debug_assertions)]
+            fn shape_id() -> std::any::TypeId {
+                std::any::TypeId::of::<S>()
+            }
+        }
+    };
+}
+
+impl_tracking_pair!(GlobalTransform);
+#[cfg(feature = "sprite")]
+impl_tracking_pair!(Sprite);
+
+macro_rules! impl_tracking_pair_tuple {
+    ($($c: ty),+) => {
+        impl<S> TrackingPair for (S, ($($c),+,))
+        where
+            S: Component + DynCollision + $(UpdateCollision<$c>+)+ Clone,
+            $($c: Component),+,
+            $((S, $c): TrackingPair),+,
+        {
+            fn update_collision() -> SystemConfigs {
+                ($(update_collision::<S, $c>),+,).chain()
+            }
+            fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+            ) -> SystemConfigs {
+                update_quadtree::<S, N, W, H, K, ID>.ambiguous_with_all()
+            }
+            #[cfg(feature = "gizmos")]
+            fn show_boundary<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+            ) -> SystemConfigs {
+                use crate::system::show_boundary;
+                show_boundary::<S, N, W, H, K, ID>.ambiguous_with_all()
+            }
+            #[cfg(debug_assertions)]
+            fn shape_id() -> std::any::TypeId {
+                std::any::TypeId::of::<S>()
+            }
+        }
+    };
+}
+
+impl_tracking_pair_tuple!(GlobalTransform);
+#[cfg(feature = "sprite")]
+impl_tracking_pair_tuple!(Sprite);
+#[cfg(feature = "sprite")]
+impl_tracking_pair_tuple!(Sprite, GlobalTransform);
+#[cfg(feature = "sprite")]
+impl_tracking_pair_tuple!(GlobalTransform, Sprite);
+
+macro_rules! impl_tracking_pairs {
     ($($i: literal),+) => {
         paste::paste! {
-            impl<$([<S $i>]),+, $([<C $i>]),+> TrackingPair for ($(([<S $i>], [<C $i>])),+,)
+            impl<$([<P $i>]),+> TrackingPair for ($([<P $i>]),+,)
             where
-                $([<S $i>]: Component + DynCollision + UpdateCollision<[<C $i>]> + Clone),+,
-                $([<C $i>]: Component),+
+                $([<P $i>]: TrackingPair),+
             {
                 fn update_collision() -> SystemConfigs {
-                    ($(update_collision::<[<S $i>], [<C $i>]>),+,).chain()
+                    ($([<P $i>]::update_collision()),+,).ambiguous_with_all()
                 }
                 fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
                 ) -> SystemConfigs {
-                    ($(update_quadtree::<[<S $i>], N, W, H, K, ID>),+,).ambiguous_with_all()
+                    #[cfg(debug_assertions)]
+                    {
+                        let mut set = std::collections::HashMap::new();
+                        $(
+                            if let Some(dup) = set.insert([<P $i>]::shape_id(), std::any::type_name::<[<P $i>]>()) {
+                                panic!("Duplicate quadtree updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one.", std::any::type_name::<[<P $i>]>(), dup);
+                            }
+                        );+
+                    }
+                    ($([<P $i>]::update_quadtree::<N, W, H, K, ID>()),+,).ambiguous_with_all()
                 }
                 #[cfg(feature = "gizmos")]
-                fn show_box<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+                fn show_boundary<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
                 ) -> SystemConfigs {
-                    use crate::system::show_box;
-                    ($(show_box::<[<S $i>], N, W, H, K, ID>),+,).ambiguous_with_all()
+                    #[cfg(debug_assertions)]
+                    {
+                        let mut set = std::collections::HashMap::new();
+                        $(
+                            if let Some(dup) = set.insert([<P $i>]::shape_id(), std::any::type_name::<[<P $i>]>()) {
+                                panic!("Duplicate gizmos box updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one.", std::any::type_name::<[<P $i>]>(), dup);
+                            }
+                        );+
+                    }
+                    ($([<P $i>]::show_boundary::<N, W, H, K, ID>()),+,).ambiguous_with_all()
+                }
+                #[cfg(debug_assertions)]
+                fn shape_id() -> std::any::TypeId {
+                    unreachable!()
                 }
             }
         }
     };
 }
 
-impl_tracking_pair!(0);
-impl_tracking_pair!(0, 1);
-impl_tracking_pair!(0, 1, 2);
-impl_tracking_pair!(0, 1, 2, 3);
-impl_tracking_pair!(0, 1, 2, 3, 4);
-impl_tracking_pair!(0, 1, 2, 3, 4, 5);
-impl_tracking_pair!(0, 1, 2, 3, 4, 5, 6);
-impl_tracking_pair!(0, 1, 2, 3, 4, 5, 6, 7);
-impl_tracking_pair!(0, 1, 2, 3, 4, 5, 6, 7, 8);
+impl_tracking_pairs!(0);
+impl_tracking_pairs!(0, 1);
+impl_tracking_pairs!(0, 1, 2);
+impl_tracking_pairs!(0, 1, 2, 3);
+impl_tracking_pairs!(0, 1, 2, 3, 4);
+impl_tracking_pairs!(0, 1, 2, 3, 4, 5);
+impl_tracking_pairs!(0, 1, 2, 3, 4, 5, 6);
+impl_tracking_pairs!(0, 1, 2, 3, 4, 5, 6, 7);
+impl_tracking_pairs!(0, 1, 2, 3, 4, 5, 6, 7, 8);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::CollisionCircle;
+
+    #[test]
+    #[should_panic(expected = "Duplicate quadtree updating system added")]
+    fn duplicate_shape1() {
+        App::new().add_plugins(QuadTreePlugin::<
+            (
+                (CollisionCircle, GlobalTransform),
+                (CollisionCircle, GlobalTransform),
+            ),
+            40,
+            100,
+            100,
+            20,
+        >::default());
+    }
+
+    #[cfg(feature = "sprite")]
+    #[test]
+    #[should_panic(expected = "Duplicate quadtree updating system added")]
+    fn duplicate_shape2() {
+        use bevy::prelude::*;
+
+        use crate::CollisionRect;
+        App::new().add_plugins(QuadTreePlugin::<
+            ((CollisionRect, GlobalTransform), (CollisionRect, Sprite)),
+            40,
+            100,
+            100,
+            20,
+        >::default());
+    }
+
+    #[cfg(feature = "sprite")]
+    #[test]
+    #[should_panic(expected = "Duplicate quadtree updating system added")]
+    fn duplicate_shape3() {
+        use crate::{CollisionCircle, CollisionRect, CollisionRotatedRect};
+        use bevy::prelude::*;
+
+        App::new().add_plugins(QuadTreePlugin::<
+            (
+                (CollisionCircle, GlobalTransform),
+                (CollisionRect, Sprite),
+                (CollisionRotatedRect, Sprite),
+                (CollisionRotatedRect, (GlobalTransform, Sprite)),
+            ),
+            40,
+            100,
+            100,
+            20,
+        >::default());
+    }
+
+    #[cfg(all(feature = "sprite", feature = "gizmos"))]
+    #[test]
+    fn plugin_test() {
+        use crate::{CollisionCircle, CollisionRect, CollisionRotatedRect};
+        use bevy::prelude::*;
+
+        App::new().add_plugins(QuadTreePlugin::<
+            (
+                (CollisionCircle, GlobalTransform),
+                (CollisionRotatedRect, Sprite),
+                (CollisionRect, (GlobalTransform, Sprite)),
+            ),
+            40,
+            100,
+            100,
+            20,
+        >::default());
+    }
+}

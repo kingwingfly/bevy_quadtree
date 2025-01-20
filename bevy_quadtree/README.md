@@ -107,7 +107,8 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(QuadTreePlugin::<(
-            (CollisionCircle, GlobalTransform), (CollisionRect, Sprite), (CollisionRect, GlobalTransform)),
+                (CollisionCircle, GlobalTransform), (CollisionRect, (GlobalTransform, Sprite)),
+            ),
             40, 100, 100, 20>::default()
         )
         // CollisionCircle follows GlobalTransform, CollisionRect follows Sprite and GlobalTransform
