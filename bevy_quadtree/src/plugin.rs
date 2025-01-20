@@ -17,12 +17,12 @@ use bevy_transform::components::GlobalTransform;
 ///
 /// `S: Component + DynCollision + UpdateCollision<C> + Clone`,
 /// such as [`CollisionCircle, CollisionRect, CollisionRotatedRect`](crate::shape).
-/// are used to perform Collision Detection,
+/// Being used to perform Collision Detection,
 /// storing the shape and position info, also serving as a marker component in ECS queries.
 /// Add the shapes which you wanna include into [`QuadTree`] and auto-upgrade.
 /// (Do not need to include those only used in the [`QuadTree::query`](crate::QuadTree::query))
 ///
-/// `C: Component`, such as `GlobalTransform`.
+/// `C: Component`, such as `GlobalTransform` or tuples of them.
 ///
 /// `N`: The max number of objects each node.
 ///
@@ -34,6 +34,16 @@ use bevy_transform::components::GlobalTransform;
 /// K should >= 10. Only if the object move and is **no longer completely contained** by the outlet_boundary will it be inserted again.
 ///
 /// `ID`: If you want different quadtree for different use cases with the same other parameters, set ID to different values.
+/// # Panic
+/// 1. duplicated shape in `P`.
+///
+/// e.g. `P = ((CollisionRect, GlobalTransform), (CollisionRect, Sprite))` will lead a debug_assertion failure.
+/// Try `P = (CollisionRect, (GlobalTransform, Sprite))` instead.
+///
+/// 2. invalid const parameters.
+///
+/// N, W, H should > 0. K should >= 10.
+///
 /// # Example
 /// ```no_run
 /// # use bevy_app::prelude::*;
