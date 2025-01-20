@@ -13,24 +13,20 @@ pub struct QNot<T>(core::marker::PhantomData<T>);
 /// There is no `QAnd` because all the filters do not overlap, e.g. `QAnd<(Disjoint, Contain)>` is always empty.
 #[allow(missing_docs)]
 pub trait QRelation {
-    fn filter<S, const N: usize, const K: usize>(
+    fn filter<const N: usize, const K: usize>(
         node: &ArcNode<N, K>,
-        boundary: &S,
-    ) -> EntityHashSet
-    where
-        S: CollisionQuery,
-    {
+        boundary: &dyn CollisionQuery,
+    ) -> EntityHashSet {
         let mut res = EntityHashSet::default();
         Self::filter_inner(node, boundary, &mut res);
         res
     }
 
-    fn filter_inner<S, const N: usize, const K: usize>(
+    fn filter_inner<const N: usize, const K: usize>(
         node: &ArcNode<N, K>,
-        boundary: &S,
+        boundary: &dyn CollisionQuery,
         res: &mut EntityHashSet,
-    ) where
-        S: CollisionQuery;
+    );
 
     fn all<const N: usize, const K: usize>(node: &ArcNode<N, K>, res: &mut EntityHashSet) {
         let node_r = node.read();
@@ -55,25 +51,21 @@ pub struct Contained;
 pub struct All;
 
 impl QRelation for All {
-    fn filter_inner<S, const N: usize, const K: usize>(
+    fn filter_inner<const N: usize, const K: usize>(
         node: &ArcNode<N, K>,
-        _: &S,
+        _: &dyn CollisionQuery,
         res: &mut EntityHashSet,
-    ) where
-        S: CollisionQuery,
-    {
+    ) {
         Self::all(node, res);
     }
 }
 
 impl QRelation for Disjoint {
-    fn filter_inner<S, const N: usize, const K: usize>(
+    fn filter_inner<const N: usize, const K: usize>(
         node: &ArcNode<N, K>,
-        boundary: &S,
+        boundary: &dyn CollisionQuery,
         res: &mut EntityHashSet,
-    ) where
-        S: CollisionQuery,
-    {
+    ) {
         let node_r = node.read();
         match boundary.query(&node_r.outlet_boundary) {
             Relation::Disjoint => All::all(node, res),
@@ -94,13 +86,11 @@ impl QRelation for Disjoint {
     }
 }
 impl QRelation for Overlap {
-    fn filter_inner<S, const N: usize, const K: usize>(
+    fn filter_inner<const N: usize, const K: usize>(
         node: &ArcNode<N, K>,
-        boundary: &S,
+        boundary: &dyn CollisionQuery,
         res: &mut EntityHashSet,
-    ) where
-        S: CollisionQuery,
-    {
+    ) {
         let node_r = node.read();
         match boundary.query(&node_r.outlet_boundary) {
             Relation::Disjoint | Relation::Contain => {}
@@ -120,13 +110,11 @@ impl QRelation for Overlap {
     }
 }
 impl QRelation for Contain {
-    fn filter_inner<S, const N: usize, const K: usize>(
+    fn filter_inner<const N: usize, const K: usize>(
         node: &ArcNode<N, K>,
-        boundary: &S,
+        boundary: &dyn CollisionQuery,
         res: &mut EntityHashSet,
-    ) where
-        S: CollisionQuery,
-    {
+    ) {
         let node_r = node.read();
         match boundary.query(&node_r.outlet_boundary) {
             Relation::Disjoint => {}
@@ -147,13 +135,11 @@ impl QRelation for Contain {
     }
 }
 impl QRelation for Contained {
-    fn filter_inner<S, const N: usize, const K: usize>(
+    fn filter_inner<const N: usize, const K: usize>(
         node: &ArcNode<N, K>,
-        boundary: &S,
+        boundary: &dyn CollisionQuery,
         res: &mut EntityHashSet,
-    ) where
-        S: CollisionQuery,
-    {
+    ) {
         let node_r = node.read();
         match boundary.query(&node_r.outlet_boundary) {
             Relation::Disjoint | Relation::Contain | Relation::Overlap => {}
@@ -178,13 +164,11 @@ macro_rules! impl_or_relation {
         impl<$($t),+> QRelation for QOr<($($t),+,)>
         where $($t: QRelation),+
         {
-            fn filter_inner<S, const N: usize, const K: usize>(
+            fn filter_inner<const N: usize, const K: usize>(
                 node: &ArcNode<N, K>,
-                boundary: &S,
+                boundary: &dyn CollisionQuery,
                 res: &mut EntityHashSet,
-            ) where
-                S: CollisionQuery,
-            {
+            ) {
                 $($t::filter_inner(node, boundary, res);)+
             }
         }
@@ -200,13 +184,11 @@ macro_rules! impl_not_relation {
     ($($r: ident), +) => {
         $(
             impl QRelation for QNot<$r> {
-                fn filter_inner<S, const N: usize, const K: usize>(
+                fn filter_inner<const N: usize, const K: usize>(
                     node: &ArcNode<N, K>,
-                    boundary: &S,
+                    boundary: &dyn CollisionQuery,
                     res: &mut EntityHashSet,
-                ) where
-                    S: CollisionQuery,
-                {
+                ) {
                     let mut tmp = EntityHashSet::default();
                     $r::filter_inner(node, boundary, &mut tmp);
                     All::all(node, res);

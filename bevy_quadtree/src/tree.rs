@@ -89,9 +89,8 @@ impl<const N: usize, const W: usize, const H: usize, const K: usize, const ID: u
     ///
     /// [`QRelation`]: implemented for [`Disjoint`](crate::Disjoint), [`Overlap`](crate::Overlap),
     /// [`Contain`](crate::Contain), [`Contained`](crate::Contained), [`QOr`](crate::QOr), [`QNot`](crate::QNot).
-    pub fn query<S, Q>(&self, boundary: &S) -> EntityHashSet
+    pub fn query<Q>(&self, boundary: &dyn CollisionQuery) -> EntityHashSet
     where
-        S: CollisionQuery,
         Q: QRelation,
     {
         Q::filter(&self.root, boundary)
@@ -256,20 +255,20 @@ mod tests {
             assert_eq!(child.total(), 2);
             assert!(child.children.is_none());
         }
-        let q = tree.query::<_, Overlap>(&CollisionRect::from(Rect::from_center_size(
+        let q = tree.query::<Overlap>(&CollisionRect::from(Rect::from_center_size(
             Vec2::ZERO,
             Vec2::ONE,
         )));
         assert_eq!(q.len(), 4);
-        let q = tree.query::<_, QOr<(Overlap, Contain)>>(&CollisionCircle::new(Vec2::ZERO, 1.));
+        let q = tree.query::<QOr<(Overlap, Contain)>>(&CollisionCircle::new(Vec2::ZERO, 1.));
         assert_eq!(q.len(), 4);
-        let q = tree.query::<_, QNot<Contain>>(&CollisionCircle::new(Vec2::ZERO, 1.));
+        let q = tree.query::<QNot<Contain>>(&CollisionCircle::new(Vec2::ZERO, 1.));
         assert_eq!(q.len(), 4);
-        let q = tree.query::<_, Disjoint>(&CollisionCircle::new(Vec2::splat(0.5), 1.));
+        let q = tree.query::<Disjoint>(&CollisionCircle::new(Vec2::splat(0.5), 1.));
         assert_eq!(q.len(), 2);
-        let q = tree.query::<_, Contain>(&CollisionCircle::new(Vec2::splat(0.5), 1.));
+        let q = tree.query::<Contain>(&CollisionCircle::new(Vec2::splat(0.5), 1.));
         assert_eq!(q.len(), 1);
-        let q = tree.query::<_, Contained>(&CollisionCircle::new(Vec2::ONE, 0.4));
+        let q = tree.query::<Contained>(&CollisionCircle::new(Vec2::ONE, 0.4));
         assert_eq!(q.len(), 2);
     }
 }
