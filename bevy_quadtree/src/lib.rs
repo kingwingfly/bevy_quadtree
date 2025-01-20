@@ -11,7 +11,7 @@ pub mod shape;
 mod system;
 pub mod tree;
 
-pub use collision::{Collision, CollisionQuery, UpdateCollision};
+pub use collision::{Collision, CollisionQuery, Disassemble, UpdateCollision};
 pub use plugin::{QuadTreePlugin, TrackingPair};
 pub use query::{All, Contain, Contained, Disjoint, Overlap, QNot, QOr, QRelation};
 pub use shape::{CollisionCircle, CollisionRect, CollisionRotatedRect};

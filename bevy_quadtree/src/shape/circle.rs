@@ -1,8 +1,11 @@
+use bevy_ecs::prelude::*;
+use bevy_math::prelude::*;
+use bevy_transform::components::GlobalTransform;
+
 use crate::{
     collision::{DynCollision, Relation},
     Collision, CollisionQuery, CollisionRect, CollisionRotatedRect, UpdateCollision,
 };
-use bevy::prelude::*;
 
 /// Circle shape to be used in the QuadTreePlugin
 /// and as a Component in the ECS.
@@ -119,19 +122,18 @@ impl UpdateCollision<GlobalTransform> for CollisionCircle {
 
 impl CollisionQuery for CollisionCircle {
     fn query(&self, obj: &dyn DynCollision) -> Relation {
-        let mut relation = Relation::Contain;
         match obj.detect(self) {
-            Relation::Contain => return Relation::Contained,
-            Relation::Contained if relation == Relation::Contain => {}
-            Relation::Contained | Relation::Overlap => return Relation::Overlap,
-            Relation::Disjoint => relation = Relation::Disjoint,
+            Relation::Contain => Relation::Contained,
+            Relation::Contained => Relation::Contain,
+            r => r,
         }
-        relation
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use bevy_math::{Rect, Rot2};
+
     use super::*;
     use std::f32::consts::*;
 

@@ -1,8 +1,15 @@
+use bevy_ecs::prelude::*;
+#[cfg(feature = "sprite")]
+use bevy_log::warn;
+use bevy_math::prelude::*;
+#[cfg(feature = "sprite")]
+use bevy_sprite::Sprite;
+use bevy_transform::components::GlobalTransform;
+
 use crate::{
     collision::{DynCollision, Relation},
     Collision, CollisionCircle, CollisionQuery, CollisionRotatedRect, UpdateCollision,
 };
-use bevy::prelude::*;
 
 /// Rectagle shape to be used in the QuadTreePlugin
 /// and as a Component in the ECS.
@@ -199,19 +206,18 @@ impl UpdateCollision<Sprite> for CollisionRect {
 
 impl CollisionQuery for CollisionRect {
     fn query(&self, obj: &dyn DynCollision) -> Relation {
-        let mut relation = Relation::Contain;
         match obj.detect(self) {
-            Relation::Contain => return Relation::Contained,
-            Relation::Contained if relation == Relation::Contain => {}
-            Relation::Contained | Relation::Overlap => return Relation::Overlap,
-            Relation::Disjoint => relation = Relation::Disjoint,
+            Relation::Contain => Relation::Contained,
+            Relation::Contained => Relation::Contain,
+            r => r,
         }
-        relation
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use bevy_math::Rot2;
+
     use super::*;
     use std::f32::consts::*;
 

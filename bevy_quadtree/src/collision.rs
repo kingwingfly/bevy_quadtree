@@ -1,9 +1,7 @@
 //! Collision Detection
 
-use bevy::prelude::{Component, Mut};
-use paste::paste;
-
 use crate::{shape::CollisionRotatedRect, CollisionCircle, CollisionRect};
+use bevy_ecs::prelude::*;
 
 /// The result of a bound check.
 /// # Example
@@ -58,6 +56,15 @@ where
 
 /// Disassemble the boundary as [`CollisionRect`]s, [`CollisionRotatedRect`]s and [`CollisionCircle`]s as query boundary.
 /// All `S: Disassemble` also impl `CollisionQuery`, which can be used as a boundary in [`QuadTree::query`](crate::QuadTree::query).
+///
+/// Relation::Contain if any of the sub-boundaries completely contains the object.
+///
+/// Relation::Contained if all of the sub-boundaries are completely contained by the object.
+///
+/// Relation::Overlap if any of the sub-boundaries overlaps the object
+/// or not all of the sub-boundaries are contained by the object.
+///
+/// Relation::Disjoint otherwise.
 pub trait Disassemble {
     /// Disassemble the shape as [`CollisionRect`], [`CollisionRotatedRect`] and [`CollisionCircle`] as query boundaries.
     fn disassemble(
@@ -71,18 +78,9 @@ pub trait Disassemble {
 
 /// Used for [`QuadTree::query`](crate::QuadTree::query) as a boundary to detect the relation between the boundary and objects from the tree.
 ///
-/// However, implementing [`Disassemble`] trait for user boundary used in [`QuadTree::query`](crate::QuadTree::query) is recommended, since it's easier.
+/// However, implementing user-defined query boundary with [`Disassemble`] trait is recommended, since it's easier.
 ///
-/// For `S: Disassemble`, the default `CollisionQuery` impletation:
-///
-/// Relation::Contain if any of the sub-boundaries completely contains the object.
-///
-/// Relation::Contained if all of the sub-boundaries are completely contained by the object.
-///
-/// Relation::Overlap if any of the sub-boundaries overlaps the object
-/// or not all of the sub-boundaries are contained by the object.
-///
-/// Relation::Disjoint otherwise.
+/// For `S: Disassemble`, the default `CollisionQuery` impletation see [`here`](crate::Disassemble).
 pub trait CollisionQuery {
     /// Detect the relation between the boundary and objects from the tree.
     fn query(&self, obj: &dyn DynCollision) -> Relation;
@@ -159,7 +157,7 @@ where
 
 macro_rules! impl_disassemable {
     ($($i: literal),+) => {
-        paste! {
+        paste::paste! {
             impl<$([<S $i>]),+> Disassemble for ($([<S $i>]),+,)
             where
                 $([<S $i>]: Disassemble,)+

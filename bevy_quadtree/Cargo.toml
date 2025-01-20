@@ -13,7 +13,14 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [dependencies]
-bevy = { workspace = true }
+bevy_app = { workspace = true }
+bevy_ecs = { workspace = true }
+bevy_math = { workspace = true }
+bevy_transform = { workspace = true, features = ["bevy-support"] }
+bevy_log = { workspace = true }
+bevy_gizmos = { workspace = true, optional = true }
+bevy_color = { workspace = true, optional = true }
+bevy_sprite = { workspace = true, optional = true }
 parking_lot = { version = "0.12.3", default-features = false }
 paste = { version = "1.0.15", default-features = false }
 
@@ -23,5 +30,5 @@ rand_chacha = { version = "0.3.1", default-features = false }
 
 [features]
 default = []
-sprite = ["bevy/bevy_sprite"]
-gizmos = ["bevy/bevy_gizmos"]
+sprite = ["dep:bevy_sprite"]
+gizmos = ["dep:bevy_gizmos", "dep:bevy_color"]

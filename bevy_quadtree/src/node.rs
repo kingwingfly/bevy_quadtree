@@ -4,12 +4,9 @@ use crate::{
     collision::{DynCollision, Relation},
     CollisionRect,
 };
-use bevy::{
-    ecs::entity::EntityHashMap,
-    log::warn,
-    math::{Rect, Vec2},
-    prelude::Entity,
-};
+use bevy_ecs::entity::{Entity, EntityHashMap};
+use bevy_log::warn;
+use bevy_math::prelude::*;
 use core::fmt;
 use parking_lot::RwLock;
 use std::sync::Arc;

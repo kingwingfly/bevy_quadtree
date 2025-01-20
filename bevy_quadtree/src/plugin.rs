@@ -4,8 +4,12 @@ use crate::collision::DynCollision;
 use crate::system::{update_collision, update_quadtree};
 use crate::tree::QuadTree;
 use crate::UpdateCollision;
-use bevy::ecs::schedule::SystemConfigs;
-use bevy::prelude::*;
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_ecs::schedule::{IntoSystemConfigs, SystemConfigs};
+#[cfg(feature = "sprite")]
+use bevy_sprite::Sprite;
+use bevy_transform::components::GlobalTransform;
 
 /// A Bevy plugin for quadtree.
 /// # Type Parameters
@@ -32,7 +36,10 @@ use bevy::prelude::*;
 /// `ID`: If you want different quadtree for different use cases with the same other parameters, set ID to different values.
 /// # Example
 /// ```no_run
-/// use bevy::prelude::*;
+/// # use bevy_app::prelude::*;
+/// # use bevy_transform::prelude::*;
+/// # #[cfg(feature = "sprite")]
+/// # use bevy_sprite::Sprite;
 /// use bevy_quadtree::{CollisionCircle, CollisionRect, CollisionRotatedRect, QuadTreePlugin};
 ///
 /// #[cfg(feature = "sprite")]
@@ -250,7 +257,8 @@ impl_tracking_pairs!(0, 1, 2, 3, 4, 5, 6, 7, 8);
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::CollisionCircle;
+    #[allow(unused_imports)]
+    use crate::{CollisionCircle, CollisionRect, CollisionRotatedRect};
 
     #[test]
     #[should_panic(expected = "Duplicate quadtree updating system added")]
@@ -271,9 +279,6 @@ mod tests {
     #[test]
     #[should_panic(expected = "Duplicate quadtree updating system added")]
     fn duplicate_shape2() {
-        use bevy::prelude::*;
-
-        use crate::CollisionRect;
         App::new().add_plugins(QuadTreePlugin::<
             ((CollisionRect, GlobalTransform), (CollisionRect, Sprite)),
             40,
@@ -287,9 +292,6 @@ mod tests {
     #[test]
     #[should_panic(expected = "Duplicate quadtree updating system added")]
     fn duplicate_shape3() {
-        use crate::{CollisionCircle, CollisionRect, CollisionRotatedRect};
-        use bevy::prelude::*;
-
         App::new().add_plugins(QuadTreePlugin::<
             (
                 (CollisionCircle, GlobalTransform),
@@ -307,9 +309,6 @@ mod tests {
     #[cfg(all(feature = "sprite", feature = "gizmos"))]
     #[test]
     fn plugin_test() {
-        use crate::{CollisionCircle, CollisionRect, CollisionRotatedRect};
-        use bevy::prelude::*;
-
         App::new().add_plugins(QuadTreePlugin::<
             (
                 (CollisionCircle, GlobalTransform),

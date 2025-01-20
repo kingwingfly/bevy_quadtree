@@ -5,10 +5,11 @@ use crate::{
     node::{ArcNode, Node},
     CollisionQuery, QRelation,
 };
-use bevy::{
-    ecs::entity::{EntityHashMap, EntityHashSet},
+use bevy_ecs::{
+    entity::{EntityHashMap, EntityHashSet},
     prelude::*,
 };
+use bevy_math::prelude::*;
 use core::fmt;
 use parking_lot::RwLock;
 use std::sync::Arc;

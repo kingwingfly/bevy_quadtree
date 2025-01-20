@@ -1,7 +1,7 @@
 //! Query
 
 use crate::{collision::Relation, node::ArcNode, CollisionQuery};
-use bevy::ecs::entity::EntityHashSet;
+use bevy_ecs::entity::EntityHashSet;
 
 /// `Or` filter used in `QuadTree::query`
 pub struct QOr<T>(core::marker::PhantomData<T>);

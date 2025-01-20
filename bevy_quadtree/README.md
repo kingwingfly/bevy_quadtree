@@ -99,13 +99,15 @@ bevy_quadtree = { version = "0.15.1" }
 2. Add the plugin to your Bevy app:
 
 ```rust no_run
-use bevy::prelude::*;
+# use bevy_app::prelude::*;
+# use bevy_transform::prelude::*;
+# #[cfg(feature = "sprite")]
+# use bevy_sprite::Sprite;
 use bevy_quadtree::{QuadTreePlugin, CollisionCircle, CollisionRect};
 
 fn main() {
     #[cfg(feature = "sprite")]
     App::new()
-        .add_plugins(DefaultPlugins)
         .add_plugins(QuadTreePlugin::<(
                 (CollisionCircle, GlobalTransform), (CollisionRect, (GlobalTransform, Sprite)),
             ),

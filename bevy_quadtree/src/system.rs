@@ -1,5 +1,9 @@
 use crate::{collision::DynCollision, tree::QuadTree, UpdateCollision};
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+#[cfg(feature = "gizmos")]
+use bevy_gizmos::prelude::*;
+#[cfg(feature = "gizmos")]
+use bevy_transform::components::GlobalTransform;
 
 pub(crate) fn update_collision<S, C>(mut q: Query<(&mut S, &C), Changed<C>>)
 where
@@ -51,7 +55,7 @@ pub(crate) fn show_boundary<
     S: Component + DynCollision + Clone,
 {
     use crate::node::ArcNode;
-    use bevy::color::palettes::css::*;
+    use bevy_color::palettes::css::*;
 
     fn draw<const N: usize, const K: usize>(gizmos: &mut Gizmos, node: &ArcNode<N, K>) {
         let node = node.read();
