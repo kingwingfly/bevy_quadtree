@@ -11,7 +11,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 ## [Unreleased]
 ## [0.15.1-alpha7] - 2025-01-20
 
-- doc improve
+- doc improvement
 
 ## [0.15.1-alpha6] - 2025-01-20
 
