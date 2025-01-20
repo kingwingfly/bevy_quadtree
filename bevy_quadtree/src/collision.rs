@@ -57,13 +57,9 @@ where
 }
 
 /// Disassemble the boundary as [`CollisionRect`]s, [`CollisionRotatedRect`]s and [`CollisionCircle`]s as query boundary.
-///
-/// Pay attention to the default implementation of [`CollisionQuery::query`] when implementing your own.
-/// However, disassemble the boundary as smaller possible shapes is recommended since it's easier.
-pub trait CollisionQuery {
+/// All `S: Disassemble` also impl `CollisionQuery`, which can be used as a boundary in [`QuadTree::query`](crate::QuadTree::query).
+pub trait Disassemble {
     /// Disassemble the shape as [`CollisionRect`], [`CollisionRotatedRect`] and [`CollisionCircle`] as query boundaries.
-    /// `CollisionQuery::disassemble` is called only in `CollisionQuery::query`'s default implementation,
-    /// so leave it `unreachable!()` if you have your own implementation of `CollisionQuery`.
     fn disassemble(
         &self,
     ) -> (
@@ -71,7 +67,31 @@ pub trait CollisionQuery {
         Vec<&CollisionRotatedRect>,
         Vec<&CollisionCircle>,
     );
+}
+
+/// Used for [`QuadTree::query`](crate::QuadTree::query) as a boundary to detect the relation between the boundary and objects from the tree.
+///
+/// However, implementing [`Disassemble`] trait for user boundary used in [`QuadTree::query`](crate::QuadTree::query) is recommended, since it's easier.
+///
+/// For `S: Disassemble`, the default `CollisionQuery` impletation:
+///
+/// Relation::Contain if any of the sub-boundaries completely contains the object.
+///
+/// Relation::Contained if all of the sub-boundaries are completely contained by the object.
+///
+/// Relation::Overlap if any of the sub-boundaries overlaps the object
+/// or not all of the sub-boundaries are contained by the object.
+///
+/// Relation::Disjoint otherwise.
+pub trait CollisionQuery {
     /// Detect the relation between the boundary and objects from the tree.
+    fn query(&self, obj: &dyn DynCollision) -> Relation;
+}
+
+impl<S> CollisionQuery for S
+where
+    S: Disassemble,
+{
     /// The default `CollisionQuery` impletation:
     ///
     /// Relation::Contain if any of the sub-boundaries completely contains the object.
@@ -113,9 +133,9 @@ pub trait CollisionQuery {
     }
 }
 
-impl<T> CollisionQuery for [T]
+impl<T> Disassemble for [T]
 where
-    T: CollisionQuery,
+    T: Disassemble,
 {
     fn disassemble(
         &self,
@@ -137,12 +157,12 @@ where
     }
 }
 
-macro_rules! impl_collision_query {
+macro_rules! impl_disassemable {
     ($($i: literal),+) => {
         paste! {
-            impl<$([<S $i>]),+> CollisionQuery for ($([<S $i>]),+,)
+            impl<$([<S $i>]),+> Disassemble for ($([<S $i>]),+,)
             where
-                $([<S $i>]: CollisionQuery,)+
+                $([<S $i>]: Disassemble,)+
             {
                 fn disassemble(
                     &self,
@@ -167,12 +187,12 @@ macro_rules! impl_collision_query {
     };
 }
 
-impl_collision_query!(0);
-impl_collision_query!(0, 1);
-impl_collision_query!(0, 1, 2);
-impl_collision_query!(0, 1, 2, 3);
-impl_collision_query!(0, 1, 2, 3, 4);
-impl_collision_query!(0, 1, 2, 3, 4, 5);
-impl_collision_query!(0, 1, 2, 3, 4, 5, 6);
-impl_collision_query!(0, 1, 2, 3, 4, 5, 6, 7);
-impl_collision_query!(0, 1, 2, 3, 4, 5, 6, 7, 8);
+impl_disassemable!(0);
+impl_disassemable!(0, 1);
+impl_disassemable!(0, 1, 2);
+impl_disassemable!(0, 1, 2, 3);
+impl_disassemable!(0, 1, 2, 3, 4);
+impl_disassemable!(0, 1, 2, 3, 4, 5);
+impl_disassemable!(0, 1, 2, 3, 4, 5, 6);
+impl_disassemable!(0, 1, 2, 3, 4, 5, 6, 7);
+impl_disassemable!(0, 1, 2, 3, 4, 5, 6, 7, 8);

@@ -198,16 +198,6 @@ impl UpdateCollision<Sprite> for CollisionRect {
 }
 
 impl CollisionQuery for CollisionRect {
-    fn disassemble(
-        &self,
-    ) -> (
-        Vec<&CollisionRect>,
-        Vec<&CollisionRotatedRect>,
-        Vec<&CollisionCircle>,
-    ) {
-        unreachable!()
-    }
-
     fn query(&self, obj: &dyn DynCollision) -> Relation {
         let mut relation = Relation::Contain;
         match obj.detect(self) {
