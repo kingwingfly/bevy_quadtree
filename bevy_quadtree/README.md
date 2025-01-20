@@ -72,7 +72,7 @@ Function:
 
 Features:
 - `gizmos`: show gizmos of the quadtree boundaries.
-- `sprite`: enable `CollisionRect` to track `sprite.custom_size`.
+- `sprite`: enable `CollisionRect` and `CollisionRotatedRect` to track `sprite.custom_size`.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
