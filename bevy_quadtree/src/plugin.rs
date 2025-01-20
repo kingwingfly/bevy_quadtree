@@ -83,6 +83,10 @@ where
     P: TrackingPair,
 {
     fn build(&self, app: &mut App) {
+        assert!(N > 0, "N should > 0");
+        assert!(W > 0, "W should > 0");
+        assert!(H > 0, "H should > 0");
+        assert!(K >= 10, "K should >= 10");
         app.init_resource::<QuadTree<N, W, H, K, ID>>()
             .add_systems(PreUpdate, P::update_collision())
             .add_systems(Update, P::update_quadtree::<N, W, H, K, ID>());

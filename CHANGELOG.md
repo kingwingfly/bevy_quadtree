@@ -14,6 +14,7 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 - simplify `CollisionQuery` trait
 - improve documentation
 - simplify dependencies
+- type params check
 
 ## [0.15.1-alpha5] - 2025-01-20
 
