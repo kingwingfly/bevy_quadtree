@@ -19,10 +19,10 @@ use bevy_transform::components::GlobalTransform;
 /// such as [`CollisionCircle, CollisionRect, CollisionRotatedRect`](crate::shape).
 /// Being used to perform Collision Detection,
 /// storing the shape and position info, also serving as a marker component in ECS queries.
-/// Add the shapes which you wanna include into [`QuadTree`] and auto-upgrade.
-/// (Do not need to include those only used in the [`QuadTree::query`](crate::QuadTree::query))
+/// (Do not need to include those only used in the [`QuadTree::query`](crate::QuadTree::query),
+/// only those need to be updated.)
 ///
-/// `C: Component`, such as `GlobalTransform` or tuples of them.
+/// `C: Component`, only `GlobalTransform`, `Sprite`(need feature `sprite`) or tuples of them for now.
 ///
 /// `N`: The max number of objects each node.
 ///
