@@ -10,7 +10,7 @@ use bevy_math::{Rect, Vec2};
 use core::fmt;
 use parking_lot::RwLock;
 use std::{
-    alloc::{GlobalAlloc, Layout, System},
+    alloc::{alloc, dealloc, Layout},
     any::type_name,
     ops::Index,
     sync::atomic::{AtomicBool, Ordering},
@@ -66,7 +66,7 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
     fn drop(&mut self) {
         unsafe {
             let layout = Layout::array::<Node<K>>(Self::MAX_LEN).expect("`D` is too large");
-            System.dealloc(self.nodes as *mut u8, layout);
+            dealloc(self.nodes as *mut u8, layout);
         }
     }
 }
@@ -79,7 +79,7 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
     pub(crate) fn new() -> Self {
         unsafe {
             let layout = Layout::array::<Node<K>>(Self::MAX_LEN).expect("`D` is too large");
-            let nodes = System.alloc(layout) as *mut Node<K>;
+            let nodes = alloc(layout) as *mut Node<K>;
             nodes.write(Node::root(Rect::from_center_size(
                 Vec2::ZERO,
                 Vec2::new(W as f32, H as f32),

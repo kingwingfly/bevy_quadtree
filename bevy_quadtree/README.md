@@ -76,7 +76,7 @@ Features:
 
 ### Caution
 
-- For those who upgrade from version <= 0.15.1-alpha7, pay attention to the new type paramter `D` in `QuadTreePlugin`.
+For those who upgrade from version <= 0.15.1-alpha7, pay attention to the new type paramter `D` in `QuadTreePlugin`.
 And shapes now have `ID` as well. Moreover, the tree memory is pre-allocated, no longer dynamically allocating.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
