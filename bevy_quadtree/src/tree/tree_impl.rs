@@ -121,8 +121,11 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
                     let p = (id - 1) >> 2;
                     if p > 0 {
                         self.insert((p - 1) >> 2, entity, shape, changed, vec![p]);
+                        return;
                     }
                 }
+                warn!("{:?} out of QuadTree boundary", entity);
+                changed.push(Change::Leave(entity));
             }
             Relation::Disjoint | Relation::Overlap => {
                 self.remove(id, &entity);
@@ -133,7 +136,7 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
             Relation::Contained => match shape.detect(&self[id].inlet_boundary) {
                 Relation::Disjoint | Relation::Overlap | Relation::Contain => {}
                 Relation::Contained => {
-                    self.remove(id, &entity);
+                    self[id].entities.write().remove(&entity);
                     self.insert(id, entity, shape, changed, vec![]);
                 }
             },
