@@ -107,7 +107,7 @@ impl<
     /// [`Contain`](crate::Contain), [`Contained`](crate::Contained), [`QOr`](crate::QOr), [`QNot`](crate::QNot).
     pub fn query<Q>(&self, boundary: &dyn CollisionQuery) -> EntityHashSet
     where
-        Q: QRelation,
+        Q: QRelation<D>,
     {
         Q::filter(&self.tree.query_tree(), boundary)
     }
