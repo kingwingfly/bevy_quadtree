@@ -1,7 +1,7 @@
 //! QuadTree
 
-mod quad_tree;
-mod query;
+pub mod quad_tree;
+pub mod query;
 mod tree_impl;
 
 pub use quad_tree::QuadTree;

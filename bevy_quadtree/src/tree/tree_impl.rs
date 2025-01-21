@@ -1,4 +1,4 @@
-//! Node in QuadTree
+//! QuadTree inner implementation.
 
 use crate::{
     collision::{DynCollision, Relation},
@@ -227,7 +227,7 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
     }
 }
 
-pub struct Node<const K: usize> {
+pub(crate) struct Node<const K: usize> {
     pub(crate) entities: RwLock<EntityHashMap<Box<dyn DynCollision>>>,
     pub(crate) inlet_boundary: CollisionRect,
     pub(crate) outlet_boundary: CollisionRect,

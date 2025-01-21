@@ -15,7 +15,7 @@ statements=(
     "cargo test -F sprite --doc"
     "cargo test --all-features"
 
-    "cargo doc --no-deps --no-default-features"
+    "cargo doc --no-deps --all-features"
 )
 
 # loop echo and executing statements

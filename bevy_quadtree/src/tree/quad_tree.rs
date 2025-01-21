@@ -1,3 +1,5 @@
+//! QuadTree
+
 use core::fmt;
 use std::any::type_name;
 
@@ -99,7 +101,7 @@ impl<
 
     /// Query the entities within the given relation with the boundary [`S: CollisionQuery`](crate::CollisionQuery),
     /// such as [`CollisionRect`](crate::CollisionRect), [`CollisionRotatedRect`](crate::CollisionRotatedRect), [`CollisionCircle`](crate::CollisionCircle) and tuple/array of them.
-    /// The rule of the relation is defined in [`CollisionQuery::query`] and [`query`](crate::query).
+    /// The rule of the relation is defined in [`CollisionQuery::query`] and [`query`](crate::tree::query).
     ///
     /// [`QRelation`]: implemented for [`Disjoint`](crate::Disjoint), [`Overlap`](crate::Overlap),
     /// [`Contain`](crate::Contain), [`Contained`](crate::Contained), [`QOr`](crate::QOr), [`QNot`](crate::QNot).

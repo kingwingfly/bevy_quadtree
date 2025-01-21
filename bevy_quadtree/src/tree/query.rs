@@ -1,3 +1,4 @@
+#![allow(private_interfaces)]
 //! Query
 
 use std::ops::Index;
@@ -6,7 +7,8 @@ use super::{quad_tree::NodeID, tree_impl::Node};
 use crate::{collision::Relation, CollisionQuery};
 use bevy_ecs::entity::EntityHashSet;
 
-pub struct QueryTree<const D: usize, const K: usize>(pub(crate) *const Node<K>);
+/// A wrapper of root node of the quadtree in order to decrease the number of type parameters.
+pub(crate) struct QueryTree<const D: usize, const K: usize>(pub(crate) *const Node<K>);
 
 impl<const D: usize, const K: usize> Index<usize> for QueryTree<D, K> {
     type Output = Node<K>;
@@ -26,6 +28,9 @@ pub struct QNot<T>(core::marker::PhantomData<T>);
 /// There is no `QAnd` because all the filters do not overlap, e.g. `QAnd<(Disjoint, Contain)>` is always empty.
 #[allow(missing_docs)]
 pub trait QRelation {
+    // filter the entities that satisfy the relation.
+    //
+    // Methods related to `QueryTree` are all private, if you need them, please open an issue.
     fn filter<const D: usize, const K: usize>(
         qt: &QueryTree<D, K>,
         boundary: &dyn CollisionQuery,
