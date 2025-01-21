@@ -41,11 +41,13 @@ pub trait QRelation<const D: usize> {
         let mut x = vec![id];
         while let Some(id) = x.pop() {
             res.extend(qt[id].entities.read().keys().cloned());
-            for i in (id << 2) + 1..=(id << 2) + 4 {
-                if !qt[i].is_leaf() {
-                    x.push(i);
-                } else {
-                    res.extend(qt[i].entities.read().keys().cloned());
+            if !qt[id].is_leaf() && (id << 2) + 4 < <Self as QRelation<D>>::MAX_LEN {
+                for i in (id << 2) + 1..=(id << 2) + 4 {
+                    if !qt[i].is_leaf() {
+                        x.push(i);
+                    } else {
+                        res.extend(qt[i].entities.read().keys().cloned());
+                    }
                 }
             }
         }
@@ -86,7 +88,7 @@ impl<const D: usize> QRelation<D> for Disjoint {
                             res.insert(*entity);
                         }
                     }
-                    if !qt[id].is_leaf() && (id << 2) + 1 < <Self as QRelation<D>>::MAX_LEN {
+                    if !qt[id].is_leaf() && (id << 2) + 4 < <Self as QRelation<D>>::MAX_LEN {
                         for i in (id << 2) + 1..=(id << 2) + 4 {
                             x.push(i);
                         }
@@ -114,7 +116,7 @@ impl<const D: usize> QRelation<D> for Overlap {
                             res.insert(*entity);
                         }
                     }
-                    if !qt[id].is_leaf() && (id << 2) + 1 < <Self as QRelation<D>>::MAX_LEN {
+                    if !qt[id].is_leaf() && (id << 2) + 4 < <Self as QRelation<D>>::MAX_LEN {
                         for i in (id << 2) + 1..=(id << 2) + 4 {
                             x.push(i);
                         }
@@ -142,7 +144,7 @@ impl<const D: usize> QRelation<D> for Contain {
                             res.insert(*entity);
                         }
                     }
-                    if !qt[id].is_leaf() && (id << 2) + 1 < <Self as QRelation<D>>::MAX_LEN {
+                    if !qt[id].is_leaf() && (id << 2) + 4 < <Self as QRelation<D>>::MAX_LEN {
                         for i in (id << 2) + 1..=(id << 2) + 4 {
                             x.push(i);
                         }
@@ -169,7 +171,7 @@ impl<const D: usize> QRelation<D> for Contained {
                             res.insert(*entity);
                         }
                     }
-                    if !qt[id].is_leaf() && (id << 2) + 1 < <Self as QRelation<D>>::MAX_LEN {
+                    if !qt[id].is_leaf() && (id << 2) + 4 < <Self as QRelation<D>>::MAX_LEN {
                         for i in (id << 2) + 1..=(id << 2) + 4 {
                             x.push(i);
                         }
