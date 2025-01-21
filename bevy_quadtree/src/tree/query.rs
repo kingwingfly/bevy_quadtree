@@ -29,24 +29,10 @@ pub trait QRelation {
     fn filter<const D: usize, const K: usize>(
         qt: &QueryTree<D, K>,
         boundary: &dyn CollisionQuery,
-    ) -> EntityHashSet {
+    ) -> EntityHashSet;
+
+    fn all<const D: usize, const K: usize>(qt: &QueryTree<D, K>, id: NodeID) -> EntityHashSet {
         let mut res = EntityHashSet::default();
-        Self::filter_inner(qt, 0, boundary, &mut res);
-        res
-    }
-
-    fn filter_inner<const D: usize, const K: usize>(
-        qt: &QueryTree<D, K>,
-        id: NodeID,
-        boundary: &dyn CollisionQuery,
-        res: &mut EntityHashSet,
-    );
-
-    fn all<const D: usize, const K: usize>(
-        qt: &QueryTree<D, K>,
-        id: NodeID,
-        res: &mut EntityHashSet,
-    ) {
         let mut x = vec![id];
         while let Some(id) = x.pop() {
             res.extend(qt[id].entities.read().keys().cloned());
@@ -58,6 +44,7 @@ pub trait QRelation {
                 }
             }
         }
+        res
     }
 }
 
@@ -73,112 +60,122 @@ pub struct Contained;
 pub struct All;
 
 impl QRelation for All {
-    fn filter_inner<const D: usize, const K: usize>(
+    fn filter<const D: usize, const K: usize>(
         qt: &QueryTree<D, K>,
-        _: NodeID,
         _: &dyn CollisionQuery,
-        res: &mut EntityHashSet,
-    ) {
-        Self::all(qt, 0, res);
+    ) -> EntityHashSet {
+        Self::all(qt, 0)
     }
 }
 
 impl QRelation for Disjoint {
-    fn filter_inner<const D: usize, const K: usize>(
+    fn filter<const D: usize, const K: usize>(
         qt: &QueryTree<D, K>,
-        id: NodeID,
         boundary: &dyn CollisionQuery,
-        res: &mut EntityHashSet,
-    ) {
-        match boundary.query(&qt[id].outlet_boundary) {
-            Relation::Disjoint => All::all(qt, id, res),
-            Relation::Overlap | Relation::Contained => {
-                for (entity, shape) in qt[id].entities.read().iter() {
-                    if boundary.query(shape.as_ref()) == Relation::Disjoint {
-                        res.insert(*entity);
+    ) -> EntityHashSet {
+        let mut res = EntityHashSet::default();
+        let mut x = vec![0];
+        while let Some(id) = x.pop() {
+            match boundary.query(&qt[id].outlet_boundary) {
+                Relation::Disjoint => res.extend(All::all(qt, id)),
+                Relation::Overlap | Relation::Contained => {
+                    for (entity, shape) in qt[id].entities.read().iter() {
+                        if boundary.query(shape.as_ref()) == Relation::Disjoint {
+                            res.insert(*entity);
+                        }
+                    }
+                    if !qt[id].is_leaf() {
+                        for i in (id << 2) + 1..=(id << 2) + 4 {
+                            x.push(i);
+                        }
                     }
                 }
-                if !qt[id].is_leaf() {
-                    for i in (id << 2) + 1..=(id << 2) + 4 {
-                        Self::filter_inner(qt, i, boundary, res);
-                    }
-                }
+                Relation::Contain => {}
             }
-            Relation::Contain => {}
         }
+        res
     }
 }
 impl QRelation for Overlap {
-    fn filter_inner<const D: usize, const K: usize>(
+    fn filter<const D: usize, const K: usize>(
         qt: &QueryTree<D, K>,
-        id: NodeID,
         boundary: &dyn CollisionQuery,
-        res: &mut EntityHashSet,
-    ) {
-        match boundary.query(&qt[id].outlet_boundary) {
-            Relation::Disjoint | Relation::Contain => {}
-            Relation::Overlap | Relation::Contained => {
-                for (entity, shape) in qt[id].entities.read().iter() {
-                    if boundary.query(shape.as_ref()) == Relation::Overlap {
-                        res.insert(*entity);
+    ) -> EntityHashSet {
+        let mut res = EntityHashSet::default();
+        let mut x = vec![0];
+        while let Some(id) = x.pop() {
+            match boundary.query(&qt[id].outlet_boundary) {
+                Relation::Disjoint | Relation::Contain => {}
+                Relation::Overlap | Relation::Contained => {
+                    for (entity, shape) in qt[id].entities.read().iter() {
+                        if boundary.query(shape.as_ref()) == Relation::Overlap {
+                            res.insert(*entity);
+                        }
                     }
-                }
-                if !qt[id].is_leaf() {
-                    for i in (id << 2) + 1..=(id << 2) + 4 {
-                        Self::filter_inner(qt, i, boundary, res);
+                    if !qt[id].is_leaf() {
+                        for i in (id << 2) + 1..=(id << 2) + 4 {
+                            x.push(i);
+                        }
                     }
                 }
             }
         }
+        res
     }
 }
 impl QRelation for Contain {
-    fn filter_inner<const D: usize, const K: usize>(
+    fn filter<const D: usize, const K: usize>(
         qt: &QueryTree<D, K>,
-        id: NodeID,
         boundary: &dyn CollisionQuery,
-        res: &mut EntityHashSet,
-    ) {
-        match boundary.query(&qt[id].outlet_boundary) {
-            Relation::Disjoint => {}
-            Relation::Contain => All::all(qt, id, res),
-            Relation::Overlap | Relation::Contained => {
-                for (entity, shape) in qt[id].entities.read().iter() {
-                    if boundary.query(shape.as_ref()) == Relation::Contain {
-                        res.insert(*entity);
+    ) -> EntityHashSet {
+        let mut res = EntityHashSet::default();
+        let mut x = vec![0];
+        while let Some(id) = x.pop() {
+            match boundary.query(&qt[id].outlet_boundary) {
+                Relation::Disjoint => {}
+                Relation::Contain => res.extend(All::all(qt, id)),
+                Relation::Overlap | Relation::Contained => {
+                    for (entity, shape) in qt[id].entities.read().iter() {
+                        if boundary.query(shape.as_ref()) == Relation::Contain {
+                            res.insert(*entity);
+                        }
                     }
-                }
-                if !qt[id].is_leaf() {
-                    for i in (id << 2) + 1..=(id << 2) + 4 {
-                        Self::filter_inner(qt, i, boundary, res);
+                    if !qt[id].is_leaf() {
+                        for i in (id << 2) + 1..=(id << 2) + 4 {
+                            x.push(i);
+                        }
                     }
                 }
             }
         }
+        res
     }
 }
 impl QRelation for Contained {
-    fn filter_inner<const D: usize, const K: usize>(
+    fn filter<const D: usize, const K: usize>(
         qt: &QueryTree<D, K>,
-        id: NodeID,
         boundary: &dyn CollisionQuery,
-        res: &mut EntityHashSet,
-    ) {
-        match boundary.query(&qt[id].outlet_boundary) {
-            Relation::Disjoint | Relation::Contain | Relation::Overlap => {}
-            Relation::Contained => {
-                for (entity, shape) in qt[id].entities.read().iter() {
-                    if boundary.query(shape.as_ref()) == Relation::Contained {
-                        res.insert(*entity);
+    ) -> EntityHashSet {
+        let mut res = EntityHashSet::default();
+        let mut x = vec![0];
+        while let Some(id) = x.pop() {
+            match boundary.query(&qt[id].outlet_boundary) {
+                Relation::Disjoint | Relation::Contain | Relation::Overlap => {}
+                Relation::Contained => {
+                    for (entity, shape) in qt[id].entities.read().iter() {
+                        if boundary.query(shape.as_ref()) == Relation::Contained {
+                            res.insert(*entity);
+                        }
                     }
-                }
-                if !qt[id].is_leaf() {
-                    for i in (id << 2) + 1..=(id << 2) + 4 {
-                        Self::filter_inner(qt, i, boundary, res);
+                    if !qt[id].is_leaf() {
+                        for i in (id << 2) + 1..=(id << 2) + 4 {
+                            x.push(i);
+                        }
                     }
                 }
             }
         }
+        res
     }
 }
 
@@ -187,13 +184,13 @@ macro_rules! impl_or_relation {
         impl<$($t),+> QRelation for QOr<($($t),+,)>
         where $($t: QRelation),+
         {
-            fn filter_inner<const D: usize, const K: usize>(
+            fn filter<const D: usize, const K: usize>(
                 qt: &QueryTree<D, K>,
-                id: NodeID,
                 boundary: &dyn CollisionQuery,
-                res: &mut EntityHashSet,
-            ) {
-                $($t::filter_inner(qt, id, boundary, res);)+
+            ) -> EntityHashSet {
+                let mut res = EntityHashSet::default();
+                $(res.extend($t::filter(qt, boundary));)+
+                res
             }
         }
     };
@@ -208,18 +205,16 @@ macro_rules! impl_not_relation {
     ($($r: ident), +) => {
         $(
             impl QRelation for QNot<$r> {
-                fn filter_inner<const D: usize, const K: usize>(
+                fn filter<const D: usize, const K: usize>(
                     qt: &QueryTree<D, K>,
-                    id: NodeID,
                     boundary: &dyn CollisionQuery,
-                    res: &mut EntityHashSet,
-                ) {
-                    let mut tmp = EntityHashSet::default();
-                    $r::filter_inner(qt, id, boundary, &mut tmp);
-                    All::all(qt, 0, res);
+                ) -> EntityHashSet {
+                    let tmp = $r::filter(qt, boundary);
+                    let mut res = All::all(qt, 0);
                     for entity in tmp.iter() {
                         res.remove(entity);
                     }
+                    res
                 }
             }
         )+

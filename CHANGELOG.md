@@ -11,7 +11,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 ## [Unreleased]
 ## [0.15.1-alpha8] - 2025-01-22
 
-- refator `QuadTree` (replace recursion with loop), a huge performance improvement in theory.
+- refator `QuadTree` (replace recursion with loop), a huge performance improvement in theory
+- remove recursion in queries
 - better Debug for shapes
 - shapes with ID
 
