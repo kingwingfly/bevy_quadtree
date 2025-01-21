@@ -201,13 +201,16 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
     }
 
     fn merge_up(&self, id: NodeID) {
+        if !self[id].is_leaf() {
+            return;
+        }
         let mut x = vec![id];
         while let Some(id) = x.pop() {
-            let mut children = (id << 2) + 1..=(id << 2) + 4;
-            if children.all(|id| self.total(id) == 0) {
-                self[id].leaf.store(true, Ordering::Release);
-                if id > 0 {
-                    let p = (id - 1) >> 2;
+            if id > 0 {
+                let p = (id - 1) >> 2;
+                let mut children = (p << 2) + 1..=(p << 2) + 4;
+                if children.all(|id| self[id].is_leaf() && self[id].len() == 0) {
+                    self[p].leaf.store(true, Ordering::Release);
                     x.push(p);
                 }
             }
