@@ -25,6 +25,7 @@ use bevy_transform::components::GlobalTransform;
 /// `C: Component`, only `GlobalTransform`, `Sprite`(need feature `sprite`) or tuples of them for now.
 ///
 /// `N`: The max number of objects each node.
+/// `D`: The max depth of the tree.
 ///
 /// `W`: The width of the root node boundary.
 /// `H`: The height of the root node boundary.
