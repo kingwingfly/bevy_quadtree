@@ -56,11 +56,12 @@ pub(crate) fn show_boundary<
     QuadTree<N, D, W, H, K, ID>: Resource,
     S: Component + DynCollision + Clone,
 {
-    use crate::node::ArcNode;
     use bevy_color::palettes::css::*;
 
-    fn draw<const N: usize, const K: usize>(gizmos: &mut Gizmos, node: &ArcNode<N, K>) {
-        let node = node.read();
+    let mut x = vec![0];
+
+    while let Some(id) = x.pop() {
+        let node = &tree.tree[id];
         gizmos.rect_2d(
             node.inlet_boundary.center,
             node.inlet_boundary.size(),
@@ -71,17 +72,16 @@ pub(crate) fn show_boundary<
             node.outlet_boundary.size(),
             RED,
         );
-        if let Some(children) = &node.children {
-            for child in children.iter() {
-                draw(gizmos, child);
+        if !node.is_leaf() {
+            for i in (id << 2) + 1..=(id << 2) + 4 {
+                x.push(i);
             }
         }
     }
-    draw(&mut gizmos, &tree.root);
     for (e, t) in q.iter() {
         let pos = t.translation().truncate();
-        if let Some(belong) = tree.entities.read().get(&e) {
-            let center = belong.read().inlet_boundary.center;
+        if let Some(id) = tree.entities.read().get(&e) {
+            let center = tree.tree[*id].inlet_boundary.center;
             gizmos.line_2d(pos, center, BLUE);
         }
     }

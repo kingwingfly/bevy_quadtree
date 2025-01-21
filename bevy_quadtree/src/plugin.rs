@@ -118,7 +118,7 @@ where
             .add_systems(Update, P::update_quadtree::<N, D, W, H, K, ID>());
         #[cfg(feature = "gizmos")]
         {
-            app.add_systems(PostUpdate, P::show_boundary::<N, W, H, K, ID>());
+            app.add_systems(PostUpdate, P::show_boundary::<N, D, W, H, K, ID>());
         }
     }
 }
