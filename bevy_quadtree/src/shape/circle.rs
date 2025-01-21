@@ -1,3 +1,5 @@
+use core::fmt;
+
 use bevy_ecs::prelude::*;
 use bevy_math::prelude::*;
 use bevy_transform::components::GlobalTransform;
@@ -15,11 +17,25 @@ use crate::{
 /// # Panic
 /// Do not perform scaling with different x and y values, it will cause the circle to be an ellipse,
 /// and the collision detection will be incorrect.
-#[derive(Debug, Component, Clone)]
-pub struct CollisionCircle {
+#[derive(Component, Clone)]
+pub struct CollisionCircle<const ID: usize = 0> {
     pub(crate) center: Vec2,
-    pub(crate) radius: f32,
+    scale: f32,
     init_radius: f32,
+}
+
+impl fmt::Debug for CollisionCircle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "CollisionCircle: center = ({}, {}); r = {} x {} = {}",
+            self.center.x,
+            self.center.y,
+            self.init_radius,
+            self.scale,
+            self.init_radius * self.scale
+        )
+    }
 }
 
 impl CollisionCircle {
@@ -29,9 +45,13 @@ impl CollisionCircle {
     pub fn new(center: Vec2, radius: f32) -> Self {
         Self {
             center,
-            radius,
+            scale: 1.,
             init_radius: radius,
         }
+    }
+
+    fn radius(&self) -> f32 {
+        self.init_radius * self.scale
     }
 
     /// Set the initial radius of the circle, which is used to compute the radius with the GlobalTransform's scale.
@@ -52,13 +72,14 @@ impl Collision<CollisionRect> for CollisionCircle {
             (self.center - rect_min).length(),
             (self.center - Vec2::new(rect_max.x, rect_min.y)).length(),
         ];
-        if ds.iter().all(|&d| d < self.radius) {
+        let radius = self.radius();
+        if ds.iter().all(|&d| d < radius) {
             Relation::Contain
-        } else if center.x > i.x + self.radius || center.y > i.y + self.radius {
+        } else if center.x > i.x + radius || center.y > i.y + radius {
             Relation::Disjoint
-        } else if center.x < i.x - self.radius && center.y < i.y - self.radius {
+        } else if center.x < i.x - radius && center.y < i.y - radius {
             Relation::Contained
-        } else if center.x > i.x && center.y > i.y && (i - center).length() > self.radius {
+        } else if center.x > i.x && center.y > i.y && (i - center).length() > radius {
             Relation::Disjoint
         } else {
             Relation::Overlap
@@ -77,13 +98,14 @@ impl Collision<CollisionRotatedRect> for CollisionCircle {
             (center - Vec2::new(-i.x, -i.y)).length(),
             (center - Vec2::new(i.x, -i.y)).length(),
         ];
-        if ds.iter().all(|&d| d < self.radius) {
+        let radius = self.radius();
+        if ds.iter().all(|&d| d < radius) {
             Relation::Contain
-        } else if center.x > i.x + self.radius || center.y > i.y + self.radius {
+        } else if center.x > i.x + radius || center.y > i.y + radius {
             Relation::Disjoint
-        } else if center.x < i.x - self.radius && center.y < i.y - self.radius {
+        } else if center.x < i.x - radius && center.y < i.y - radius {
             Relation::Contained
-        } else if center.x > i.x && center.y > i.y && ds[0] > self.radius {
+        } else if center.x > i.x && center.y > i.y && ds[0] > radius {
             Relation::Disjoint
         } else {
             Relation::Overlap
@@ -94,11 +116,13 @@ impl Collision<CollisionRotatedRect> for CollisionCircle {
 impl Collision<CollisionCircle> for CollisionCircle {
     fn detect(&self, circle: &CollisionCircle) -> Relation {
         let d = (self.center - circle.center).length();
-        if d + circle.radius < self.radius {
+        let self_r = self.radius();
+        let circle_r = circle.radius();
+        if d + circle_r < self_r {
             Relation::Contain
-        } else if d + self.radius < circle.radius {
+        } else if d + self_r < circle_r {
             Relation::Contained
-        } else if d > self.radius + circle.radius {
+        } else if d > self_r + circle_r {
             Relation::Disjoint
         } else {
             Relation::Overlap
@@ -115,7 +139,7 @@ impl UpdateCollision<GlobalTransform> for CollisionCircle {
                 "Do not perform scaling with different x and y values,
                 it will cause the circle to be an ellipse, and the collision detection will be incorrect."
             );
-            circle.radius = circle.init_radius * global_transform.scale().x;
+            circle.scale = global_transform.scale().x;
         }
     }
 }

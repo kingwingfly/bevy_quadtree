@@ -111,10 +111,11 @@ fn main() {
         .add_plugins(QuadTreePlugin::<(
                 (CollisionCircle, GlobalTransform), (CollisionRect, (GlobalTransform, Sprite)),
             ),
-            40, 100, 100, 20>::default()
+            8, 40, 100, 100, 20>::default()
         )
         // CollisionCircle follows GlobalTransform, CollisionRect follows Sprite and GlobalTransform
         // at most 40 entities in a node
+        // at most 8 levels
         // 100 x 100 world size
         // 20 / 10 = 2 = outlet_boundary / inlet_boundary (for loose quadtree)
         .run();

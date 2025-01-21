@@ -18,12 +18,13 @@ where
 pub(crate) fn update_quadtree<
     S,
     const N: usize,
+    const D: usize,
     const W: usize,
     const H: usize,
     const K: usize,
     const ID: usize,
 >(
-    tree: Res<QuadTree<N, W, H, K, ID>>,
+    tree: Res<QuadTree<N, D, W, H, K, ID>>,
     q: Query<(Entity, &S), Changed<S>>,
     mut r: RemovedComponents<S>,
 ) where
@@ -42,16 +43,17 @@ pub(crate) fn update_quadtree<
 pub(crate) fn show_boundary<
     S,
     const N: usize,
+    const D: usize,
     const W: usize,
     const H: usize,
     const K: usize,
     const ID: usize,
 >(
-    tree: Res<QuadTree<N, W, H, K, ID>>,
+    tree: Res<QuadTree<N, D, W, H, K, ID>>,
     q: Query<(Entity, &GlobalTransform), With<S>>,
     mut gizmos: Gizmos,
 ) where
-    QuadTree<N, W, H, K, ID>: Resource,
+    QuadTree<N, D, W, H, K, ID>: Resource,
     S: Component + DynCollision + Clone,
 {
     use crate::node::ArcNode;

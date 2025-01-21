@@ -38,7 +38,7 @@ use bevy_transform::components::GlobalTransform;
 /// 1. duplicated shape in `P`.
 ///
 /// e.g. `P = ((CollisionRect, GlobalTransform), (CollisionRect, Sprite))` will lead a debug_assertion failure.
-/// Try `P = (CollisionRect, (GlobalTransform, Sprite))` instead.
+/// Try `P = (CollisionRect, (GlobalTransform, Sprite))` or `P = ((CollisionRect<0>, GlobalTransform), (CollisionRect<1>, Sprite))` in concret context.
 ///
 /// 2. invalid const parameters.
 ///
@@ -59,12 +59,13 @@ use bevy_transform::components::GlobalTransform;
 ///             (CollisionRotatedRect, GlobalTransform),
 ///             (CollisionRect, Sprite),
 ///         ),
-///         40, 100, 100, 20>::default());
+///         4, 40, 100, 100, 20>::default());
 /// ```
 #[derive(Debug)]
 pub struct QuadTreePlugin<
     P,
     const N: usize,
+    const D: usize,
     const W: usize,
     const H: usize,
     const K: usize = 10,
@@ -75,8 +76,15 @@ pub struct QuadTreePlugin<
     _marker: std::marker::PhantomData<P>,
 }
 
-impl<P, const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize> Default
-    for QuadTreePlugin<P, N, W, H, K, ID>
+impl<
+        P,
+        const D: usize,
+        const N: usize,
+        const W: usize,
+        const H: usize,
+        const K: usize,
+        const ID: usize,
+    > Default for QuadTreePlugin<P, N, D, W, H, K, ID>
 where
     P: TrackingPair,
 {
@@ -87,19 +95,27 @@ where
     }
 }
 
-impl<P, const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize> Plugin
-    for QuadTreePlugin<P, N, W, H, K, ID>
+impl<
+        P,
+        const N: usize,
+        const D: usize,
+        const W: usize,
+        const H: usize,
+        const K: usize,
+        const ID: usize,
+    > Plugin for QuadTreePlugin<P, N, D, W, H, K, ID>
 where
     P: TrackingPair,
 {
     fn build(&self, app: &mut App) {
         assert!(N > 0, "N should > 0");
+        assert!(D > 0, "D should > 0");
         assert!(W > 0, "W should > 0");
         assert!(H > 0, "H should > 0");
         assert!(K >= 10, "K should >= 10");
-        app.init_resource::<QuadTree<N, W, H, K, ID>>()
+        app.init_resource::<QuadTree<N, D, W, H, K, ID>>()
             .add_systems(PreUpdate, P::update_collision())
-            .add_systems(Update, P::update_quadtree::<N, W, H, K, ID>());
+            .add_systems(Update, P::update_quadtree::<N, D, W, H, K, ID>());
         #[cfg(feature = "gizmos")]
         {
             app.add_systems(PostUpdate, P::show_boundary::<N, W, H, K, ID>());
@@ -115,6 +131,7 @@ pub trait TrackingPair: Send + Sync + 'static {
     /// return the system to update quadtree
     fn update_quadtree<
         const N: usize,
+        const D: usize,
         const W: usize,
         const H: usize,
         const K: usize,
@@ -124,6 +141,7 @@ pub trait TrackingPair: Send + Sync + 'static {
     #[cfg(feature = "gizmos")]
     fn show_boundary<
         const N: usize,
+        const D: usize,
         const W: usize,
         const H: usize,
         const K: usize,
@@ -145,23 +163,25 @@ macro_rules! impl_tracking_pair {
             }
             fn update_quadtree<
                 const N: usize,
+                const D: usize,
                 const W: usize,
                 const H: usize,
                 const K: usize,
                 const ID: usize,
             >() -> SystemConfigs {
-                update_quadtree::<S, N, W, H, K, ID>.ambiguous_with_all()
+                update_quadtree::<S, N, D, W, H, K, ID>.ambiguous_with_all()
             }
             #[cfg(feature = "gizmos")]
             fn show_boundary<
                 const N: usize,
+                const D: usize,
                 const W: usize,
                 const H: usize,
                 const K: usize,
                 const ID: usize,
             >() -> SystemConfigs {
                 use crate::system::show_boundary;
-                show_boundary::<S, N, W, H, K, ID>.ambiguous_with_all()
+                show_boundary::<S, N, D, W, H, K, ID>.ambiguous_with_all()
             }
             #[cfg(debug_assertions)]
             fn shape_id() -> std::any::TypeId {
@@ -186,15 +206,15 @@ macro_rules! impl_tracking_pair_tuple {
             fn update_collision() -> SystemConfigs {
                 ($(update_collision::<S, $c>),+,).chain()
             }
-            fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+            fn update_quadtree<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
             ) -> SystemConfigs {
-                update_quadtree::<S, N, W, H, K, ID>.ambiguous_with_all()
+                update_quadtree::<S, N, D, W, H, K, ID>.ambiguous_with_all()
             }
             #[cfg(feature = "gizmos")]
-            fn show_boundary<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+            fn show_boundary<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
             ) -> SystemConfigs {
                 use crate::system::show_boundary;
-                show_boundary::<S, N, W, H, K, ID>.ambiguous_with_all()
+                show_boundary::<S, N, D, W, H, K, ID>.ambiguous_with_all()
             }
             #[cfg(debug_assertions)]
             fn shape_id() -> std::any::TypeId {
@@ -222,32 +242,32 @@ macro_rules! impl_tracking_pairs {
                 fn update_collision() -> SystemConfigs {
                     ($([<P $i>]::update_collision()),+,).ambiguous_with_all()
                 }
-                fn update_quadtree<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+                fn update_quadtree<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
                 ) -> SystemConfigs {
                     #[cfg(debug_assertions)]
                     {
                         let mut set = std::collections::HashMap::new();
                         $(
                             if let Some(dup) = set.insert([<P $i>]::shape_id(), std::any::type_name::<[<P $i>]>()) {
-                                panic!("Duplicate quadtree updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one.", std::any::type_name::<[<P $i>]>(), dup);
+                                panic!("Duplicate quadtree updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one or use `ID` type parameter of shape.", std::any::type_name::<[<P $i>]>(), dup);
                             }
                         );+
                     }
-                    ($([<P $i>]::update_quadtree::<N, W, H, K, ID>()),+,).ambiguous_with_all()
+                    ($([<P $i>]::update_quadtree::<N, D, W, H, K, ID>()),+,).ambiguous_with_all()
                 }
                 #[cfg(feature = "gizmos")]
-                fn show_boundary<const N: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+                fn show_boundary<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
                 ) -> SystemConfigs {
                     #[cfg(debug_assertions)]
                     {
                         let mut set = std::collections::HashMap::new();
                         $(
                             if let Some(dup) = set.insert([<P $i>]::shape_id(), std::any::type_name::<[<P $i>]>()) {
-                                panic!("Duplicate gizmos box updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one.", std::any::type_name::<[<P $i>]>(), dup);
+                                panic!("Duplicate gizmos box updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one or use `ID` type parameter of shape.", std::any::type_name::<[<P $i>]>(), dup);
                             }
                         );+
                     }
-                    ($([<P $i>]::show_boundary::<N, W, H, K, ID>()),+,).ambiguous_with_all()
+                    ($([<P $i>]::show_boundary::<N, D, W, H, K, ID>()),+,).ambiguous_with_all()
                 }
                 #[cfg(debug_assertions)]
                 fn shape_id() -> std::any::TypeId {
@@ -283,6 +303,7 @@ mod tests {
                 (CollisionCircle, GlobalTransform),
             ),
             40,
+            4,
             100,
             100,
             20,
@@ -296,6 +317,7 @@ mod tests {
         App::new().add_plugins(QuadTreePlugin::<
             ((CollisionRect, GlobalTransform), (CollisionRect, Sprite)),
             40,
+            4,
             100,
             100,
             20,
@@ -314,6 +336,7 @@ mod tests {
                 (CollisionRotatedRect, (GlobalTransform, Sprite)),
             ),
             40,
+            4,
             100,
             100,
             20,
@@ -330,6 +353,7 @@ mod tests {
                 (CollisionRect, (GlobalTransform, Sprite)),
             ),
             40,
+            4,
             100,
             100,
             20,

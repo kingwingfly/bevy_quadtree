@@ -1,3 +1,5 @@
+use core::fmt;
+
 use bevy_ecs::prelude::*;
 #[cfg(feature = "sprite")]
 use bevy_log::warn;
@@ -18,11 +20,28 @@ use crate::{
 ///
 /// # Panic
 /// Rotation is not supported for CollisionRect, see [`CollisionRotatedRect`] instead.
-#[derive(Debug, Component, Clone)]
-pub struct CollisionRect {
+#[derive(Component, Clone)]
+pub struct CollisionRect<const ID: usize = 0> {
     pub(crate) center: Vec2,
     pub(crate) scale: Vec2,
     init_size: Vec2,
+}
+
+impl fmt::Debug for CollisionRect {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "CollisionRect: center = ({}, {}); size = ({} x {}) x ({} x {}) = {} x {}",
+            self.center.x,
+            self.center.y,
+            self.init_size.x,
+            self.scale.x,
+            self.init_size.y,
+            self.scale.y,
+            self.init_size.x * self.scale.x,
+            self.init_size.y * self.scale.y
+        )
+    }
 }
 
 impl From<Rect> for CollisionRect {

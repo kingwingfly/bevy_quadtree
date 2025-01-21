@@ -1,3 +1,5 @@
+use core::fmt;
+
 use crate::{
     collision::{DynCollision, Relation},
     Collision, CollisionCircle, CollisionQuery, CollisionRect, UpdateCollision,
@@ -14,11 +16,29 @@ use bevy_transform::components::GlobalTransform;
 /// and as a Component in the ECS.
 ///
 /// Also, implemented [`CollisionQuery`] trait to be used as boundary in the [`QuadTree::query`](crate::QuadTree::query).
-#[derive(Debug, Component, Clone)]
-pub struct CollisionRotatedRect {
+#[derive(Component, Clone)]
+pub struct CollisionRotatedRect<const ID: usize = 0> {
     pub(crate) init_size: Vec2,
     pub(crate) scale: Vec2,
     pub(crate) isometric: Isometry2d,
+}
+
+impl fmt::Debug for CollisionRotatedRect {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "CollisionRotatedRect: center = ({}, {}); size = ({} x {}) x ({} x {}) = {} x {}; totation = {}",
+            self.isometric.translation.x,
+            self.isometric.translation.y,
+            self.init_size.x,
+            self.scale.x,
+            self.init_size.y,
+            self.scale.y,
+            self.init_size.x * self.scale.x,
+            self.init_size.y * self.scale.y,
+            self.isometric.rotation.as_degrees()
+        )
+    }
 }
 
 impl From<Rect> for CollisionRotatedRect {
