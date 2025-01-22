@@ -61,7 +61,7 @@ use bevy_transform::components::GlobalTransform;
 ///             (CollisionRotatedRect, GlobalTransform),
 ///             (CollisionRect, Sprite),
 ///         ),
-///         4, 40, 100, 100, 20>::default());
+///         40, 4, 100, 100, 20>::default());
 /// ```
 #[derive(Debug)]
 pub struct QuadTreePlugin<

@@ -116,7 +116,7 @@ fn main() {
         .add_plugins(QuadTreePlugin::<(
                 (CollisionCircle, GlobalTransform), (CollisionRect, (GlobalTransform, Sprite)),
             ),
-            8, 40, 100, 100, 20>::default()
+            40, 8, 100, 100, 20>::default()
         )
         // CollisionCircle follows GlobalTransform, CollisionRect follows Sprite and GlobalTransform
         // at most 40 entities in a node
@@ -147,7 +147,7 @@ cmds.spawn((
 4. Query the quadtree like bevy's `Or, Not`:
 
 ```rust ignore
-type MyQuadTree = QuadTree<8, 40, 100, 100, 20>;
+type MyQuadTree = QuadTree<40, 8, 100, 100, 20>;
 
 fn pick(
     mut gizmos: Gizmos,
