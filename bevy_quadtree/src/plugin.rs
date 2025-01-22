@@ -1,6 +1,6 @@
 //! QuadTree Plugin
 
-use crate::collision::DynCollision;
+use crate::collision::AsDynCollision;
 use crate::system::{update_collision, update_quadtree};
 use crate::tree::QuadTree;
 use crate::UpdateCollision;
@@ -15,14 +15,15 @@ use bevy_transform::components::GlobalTransform;
 /// # Type Parameters
 /// `P`: `(S, C)` pair (or tuple of `(S, C)`s) where `S` (collision shape) can updated by `C` (component).
 ///
-/// `S: Component + DynCollision + UpdateCollision<C> + Clone`,
+/// `S: Component + AsDynCollision + UpdateCollision<C> + Clone`,
 /// such as [`CollisionCircle, CollisionRect, CollisionRotatedRect`](crate::shape).
 /// Being used to perform Collision Detection,
 /// storing the shape and position info, also serving as a marker component in ECS queries.
 /// (Do not need to include those only used in the [`QuadTree::query`](crate::QuadTree::query),
-/// only those need to be updated.)
+/// please include those need to be updated.)
 ///
-/// `C: Component`, only `GlobalTransform`, `Sprite`(need feature `sprite`) or tuples of them for now.
+/// `C: Component`, the components the shapes will be updated according to.
+/// Only `GlobalTransform`, `Sprite`(need feature `sprite`) or tuples of them for now.
 ///
 /// `N`: The max number of objects each node.
 /// `D`: The max depth of the tree.
@@ -43,7 +44,7 @@ use bevy_transform::components::GlobalTransform;
 ///
 /// 2. invalid const parameters.
 ///
-/// N, W, H should > 0. K should >= 10.
+/// N, D, W, H should > 0. K should >= 10.
 ///
 /// # Example
 /// ```no_run
@@ -118,9 +119,7 @@ where
             .add_systems(PreUpdate, P::update_collision())
             .add_systems(Update, P::update_quadtree::<N, D, W, H, K, ID>());
         #[cfg(feature = "gizmos")]
-        {
-            app.add_systems(PostUpdate, P::show_boundary::<N, D, W, H, K, ID>());
-        }
+        app.add_systems(PostUpdate, P::show_boundary::<N, D, W, H, K, ID>());
     }
 }
 
@@ -157,7 +156,7 @@ macro_rules! impl_tracking_pair {
     ($c: ty) => {
         impl<S> TrackingPair for (S, $c)
         where
-            S: Component + DynCollision + UpdateCollision<$c> + Clone,
+            S: Component + AsDynCollision + UpdateCollision<$c> + Clone,
         {
             fn update_collision() -> SystemConfigs {
                 update_collision::<S, $c>.ambiguous_with_all()
@@ -200,7 +199,7 @@ macro_rules! impl_tracking_pair_tuple {
     ($($c: ty),+) => {
         impl<S> TrackingPair for (S, ($($c),+,))
         where
-            S: Component + DynCollision + $(UpdateCollision<$c>+)+ Clone,
+            S: Component + AsDynCollision + $(UpdateCollision<$c>+)+ Clone,
             $($c: Component),+,
             $((S, $c): TrackingPair),+,
         {
@@ -250,7 +249,7 @@ macro_rules! impl_tracking_pairs {
                         let mut set = std::collections::HashMap::new();
                         $(
                             if let Some(dup) = set.insert([<P $i>]::shape_id(), std::any::type_name::<[<P $i>]>()) {
-                                panic!("Duplicate quadtree updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one or use `ID` type parameter of shape.", std::any::type_name::<[<P $i>]>(), dup);
+                                panic!("Duplicate quadtree updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one or use `ID` type parameter of shape.", dup, std::any::type_name::<[<P $i>]>());
                             }
                         );+
                     }
@@ -264,7 +263,7 @@ macro_rules! impl_tracking_pairs {
                         let mut set = std::collections::HashMap::new();
                         $(
                             if let Some(dup) = set.insert([<P $i>]::shape_id(), std::any::type_name::<[<P $i>]>()) {
-                                panic!("Duplicate gizmos box updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one or use `ID` type parameter of shape.", std::any::type_name::<[<P $i>]>(), dup);
+                                panic!("Duplicate gizmos box updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one or use `ID` type parameter of shape.", dup, std::any::type_name::<[<P $i>]>());
                             }
                         );+
                     }
@@ -352,6 +351,21 @@ mod tests {
                 (CollisionCircle, GlobalTransform),
                 (CollisionRotatedRect, Sprite),
                 (CollisionRect, (GlobalTransform, Sprite)),
+            ),
+            40,
+            4,
+            100,
+            100,
+            20,
+        >::default());
+    }
+
+    #[test]
+    fn plugin_test_with_id() {
+        App::new().add_plugins(QuadTreePlugin::<
+            (
+                (CollisionCircle<0>, GlobalTransform),
+                (CollisionCircle<1>, GlobalTransform),
             ),
             40,
             4,

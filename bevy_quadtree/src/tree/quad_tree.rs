@@ -5,7 +5,7 @@ use std::any::type_name;
 
 use super::tree_impl::Change;
 pub(crate) use super::tree_impl::{NodeID, Tree};
-use crate::{collision::DynCollision, CollisionQuery, QRelation};
+use crate::{collision::AsDynCollision, CollisionQuery, QRelation};
 use bevy_ecs::{
     entity::{EntityHashMap, EntityHashSet},
     prelude::*,
@@ -76,9 +76,9 @@ impl<
 
     pub(crate) fn insert<S>(&self, entity: Entity, shape: S)
     where
-        S: DynCollision + 'static,
+        S: AsDynCollision + 'static,
     {
-        let shape: Box<dyn DynCollision> = Box::new(shape);
+        let shape = shape.as_dyn_collision();
         let mut changed = vec![];
         match self.entities.read().get(&entity) {
             Some(id) => self.tree.update(*id, entity, shape, &mut changed),

@@ -1,5 +1,3 @@
-use core::fmt;
-
 use bevy_ecs::prelude::*;
 #[cfg(feature = "sprite")]
 use bevy_log::warn;
@@ -7,6 +5,8 @@ use bevy_math::prelude::*;
 #[cfg(feature = "sprite")]
 use bevy_sprite::Sprite;
 use bevy_transform::components::GlobalTransform;
+use core::fmt;
+use std::any::type_name;
 
 use crate::{
     collision::{DynCollision, Relation},
@@ -27,11 +27,12 @@ pub struct CollisionRect<const ID: usize = 0> {
     init_size: Vec2,
 }
 
-impl fmt::Debug for CollisionRect {
+impl<const ID: usize> fmt::Debug for CollisionRect<ID> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "CollisionRect: center = ({}, {}); size = ({} x {}) x ({} x {}) = {} x {}",
+            "{}: center = ({}, {}); size = ({} x {}) x ({} x {}) = {} x {}",
+            type_name::<Self>(),
             self.center.x,
             self.center.y,
             self.init_size.x,
@@ -44,7 +45,22 @@ impl fmt::Debug for CollisionRect {
     }
 }
 
+impl<const ID: usize> From<&CollisionRect<ID>> for CollisionRect<0> {
+    /// Convert the shape with `ID` to the shape with `ID = 0`.
+    /// Used to eliminate the `ID` in the collision detection.
+    fn from(value: &CollisionRect<ID>) -> Self {
+        Self {
+            center: value.center,
+            scale: value.scale,
+            init_size: value.init_size,
+        }
+    }
+}
+
 impl From<Rect> for CollisionRect {
+    /// Create a new CollisionRect from a Rect with `ID = 0`.
+    ///
+    /// See [`Self::new`] for details.
     fn from(rect: Rect) -> Self {
         Self {
             center: rect.center(),
@@ -55,7 +71,8 @@ impl From<Rect> for CollisionRect {
 }
 
 impl CollisionRect {
-    /// Create a new CollisionRect from a Rect.
+    /// Create a new CollisionRect from a Rect with `ID = 0`.
+    ///
     /// The initial size is set to the size of the rect.
     /// It is used to compute the size with the GlobalTransform's scale.
     ///
@@ -63,6 +80,17 @@ impl CollisionRect {
     /// It is covered by the GlobalTransform's translation during the update.
     pub fn new(rect: Rect) -> Self {
         rect.into()
+    }
+}
+
+impl<const ID: usize> CollisionRect<ID> {
+    /// Create a new CollisionRect from a Rect with given `ID`.
+    pub fn new_id(rect: Rect) -> Self {
+        Self {
+            center: rect.center(),
+            scale: Vec2::ONE,
+            init_size: rect.size(),
+        }
     }
 
     pub(crate) fn size(&self) -> Vec2 {
@@ -193,7 +221,7 @@ impl Collision<CollisionCircle> for CollisionRect {
     }
 }
 
-impl UpdateCollision<GlobalTransform> for CollisionRect {
+impl<const ID: usize> UpdateCollision<GlobalTransform> for CollisionRect<ID> {
     fn update() -> impl FnOnce(Mut<Self>, &GlobalTransform) {
         |mut rect, global_transform| {
             debug_assert_eq!(
@@ -209,7 +237,7 @@ impl UpdateCollision<GlobalTransform> for CollisionRect {
 }
 
 #[cfg(feature = "sprite")]
-impl UpdateCollision<Sprite> for CollisionRect {
+impl<const ID: usize> UpdateCollision<Sprite> for CollisionRect<ID> {
     fn update() -> impl FnOnce(Mut<Self>, &Sprite) {
         |mut rect, sprite| {
             if let Some(size) = sprite.custom_size {

@@ -1,5 +1,3 @@
-use core::fmt;
-
 use crate::{
     collision::{DynCollision, Relation},
     Collision, CollisionCircle, CollisionQuery, CollisionRect, UpdateCollision,
@@ -11,6 +9,8 @@ use bevy_math::prelude::*;
 #[cfg(feature = "sprite")]
 use bevy_sprite::Sprite;
 use bevy_transform::components::GlobalTransform;
+use core::fmt;
+use std::any::type_name;
 
 /// Rotated Rectagle shape to be used in the QuadTreePlugin
 /// and as a Component in the ECS.
@@ -23,11 +23,12 @@ pub struct CollisionRotatedRect<const ID: usize = 0> {
     pub(crate) isometric: Isometry2d,
 }
 
-impl fmt::Debug for CollisionRotatedRect {
+impl<const ID: usize> fmt::Debug for CollisionRotatedRect<ID> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "CollisionRotatedRect: center = ({}, {}); size = ({} x {}) x ({} x {}) = {} x {}; totation = {}",
+            "{}: center = ({}, {}); size = ({} x {}) x ({} x {}) = {} x {}; totation = {}",
+            type_name::<Self>(),
             self.isometric.translation.x,
             self.isometric.translation.y,
             self.init_size.x,
@@ -41,8 +42,22 @@ impl fmt::Debug for CollisionRotatedRect {
     }
 }
 
+impl<const ID: usize> From<&CollisionRotatedRect<ID>> for CollisionRotatedRect<0> {
+    /// Convert the shape with `ID` to the shape with `ID = 0`.
+    /// Used to eliminate the `ID` in the collision detection.
+    fn from(value: &CollisionRotatedRect<ID>) -> Self {
+        Self {
+            init_size: value.init_size,
+            scale: value.scale,
+            isometric: value.isometric,
+        }
+    }
+}
+
 impl From<Rect> for CollisionRotatedRect {
     /// Create a new CollisionRotatedRect from a Rect with the default scale and rotation.
+    ///
+    /// See [`Self::new`] for the version with rotation.
     fn from(rect: Rect) -> Self {
         Self {
             init_size: rect.size(),
@@ -53,11 +68,23 @@ impl From<Rect> for CollisionRotatedRect {
 }
 
 impl CollisionRotatedRect {
-    /// Create a new CollisionRotatedRect with the given Rect and rotation.
+    /// Create a new CollisionRotatedRect with `ID = 0`, and given Rect, rotation. See [`Self::new_id`] for the version with `ID`.
+    ///
     /// The rotation is relative to the center of the rect.
     /// When updating, the rotation from the GlobalTransform will directly cover the isometric,
     /// instead of based on the initial rotation.
     pub fn new(rect: Rect, rotation: Rot2) -> Self {
+        Self {
+            init_size: rect.size(),
+            scale: Vec2::ONE,
+            isometric: Isometry2d::new(rect.center(), rotation),
+        }
+    }
+}
+
+impl<const ID: usize> CollisionRotatedRect<ID> {
+    /// Create a new CollisionRotatedRect with the given ID, Rect and rotation.
+    pub fn new_id(rect: Rect, rotation: Rot2) -> Self {
         Self {
             init_size: rect.size(),
             scale: Vec2::ONE,
@@ -165,7 +192,7 @@ impl Collision<CollisionCircle> for CollisionRotatedRect {
     }
 }
 
-impl UpdateCollision<GlobalTransform> for CollisionRotatedRect {
+impl<const ID: usize> UpdateCollision<GlobalTransform> for CollisionRotatedRect<ID> {
     fn update() -> impl FnOnce(Mut<Self>, &GlobalTransform) {
         |mut rect, global_transform| {
             debug_assert_eq!(
@@ -183,7 +210,7 @@ impl UpdateCollision<GlobalTransform> for CollisionRotatedRect {
 }
 
 #[cfg(feature = "sprite")]
-impl UpdateCollision<Sprite> for CollisionRotatedRect {
+impl<const ID: usize> UpdateCollision<Sprite> for CollisionRotatedRect<ID> {
     fn update() -> impl FnOnce(Mut<Self>, &Sprite) {
         |mut rect, sprite| {
             if let Some(size) = sprite.custom_size {

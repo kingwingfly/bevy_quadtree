@@ -147,7 +147,7 @@ cmds.spawn((
 4. Query the quadtree like bevy's `Or, Not`:
 
 ```rust ignore
-type MyQuadTree = QuadTree<40, 100, 100, 20>;
+type MyQuadTree = QuadTree<8, 40, 100, 100, 20>;
 
 fn pick(
     mut gizmos: Gizmos,

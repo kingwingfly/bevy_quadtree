@@ -44,6 +44,33 @@ impl<T> DynCollision for T where
 {
 }
 
+/// Erase the `ID` of the shape and store it as a trait object in the `QuadTree`.
+#[allow(missing_docs)]
+pub trait AsDynCollision {
+    fn as_dyn_collision(&self) -> Box<dyn DynCollision>;
+}
+
+impl<const D: usize> AsDynCollision for CollisionRect<D> {
+    fn as_dyn_collision(&self) -> Box<dyn DynCollision> {
+        let this = CollisionRect::from(self);
+        Box::new(this)
+    }
+}
+
+impl<const D: usize> AsDynCollision for CollisionRotatedRect<D> {
+    fn as_dyn_collision(&self) -> Box<dyn DynCollision> {
+        let this = CollisionRotatedRect::from(self);
+        Box::new(this)
+    }
+}
+
+impl<const D: usize> AsDynCollision for CollisionCircle<D> {
+    fn as_dyn_collision(&self) -> Box<dyn DynCollision> {
+        let this = CollisionCircle::from(self);
+        Box::new(this)
+    }
+}
+
 /// Update the attributes of the shape during PreUpdate stage and before Collision Detection.
 pub trait UpdateCollision<C>
 where

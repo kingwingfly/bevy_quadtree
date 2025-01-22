@@ -1,4 +1,4 @@
-use crate::{collision::DynCollision, tree::QuadTree, UpdateCollision};
+use crate::{collision::AsDynCollision, tree::QuadTree, UpdateCollision};
 use bevy_ecs::prelude::*;
 #[cfg(feature = "gizmos")]
 use bevy_gizmos::prelude::*;
@@ -28,8 +28,8 @@ pub(crate) fn update_quadtree<
     q: Query<(Entity, &S), Changed<S>>,
     mut r: RemovedComponents<S>,
 ) where
-    QuadTree<N, W, H, K, ID>: Resource,
-    S: Component + DynCollision + Clone,
+    QuadTree<N, D, W, H, K, ID>: Resource,
+    S: Component + AsDynCollision + Clone,
 {
     q.par_iter().for_each(|(e, s)| {
         tree.insert(e, s.clone());
@@ -54,7 +54,7 @@ pub(crate) fn show_boundary<
     mut gizmos: Gizmos,
 ) where
     QuadTree<N, D, W, H, K, ID>: Resource,
-    S: Component + DynCollision + Clone,
+    S: Component + AsDynCollision + Clone,
 {
     use bevy_color::palettes::css::*;
 

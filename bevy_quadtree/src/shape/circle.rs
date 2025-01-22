@@ -1,8 +1,8 @@
-use core::fmt;
-
 use bevy_ecs::prelude::*;
 use bevy_math::prelude::*;
 use bevy_transform::components::GlobalTransform;
+use core::fmt;
+use std::any::type_name;
 
 use crate::{
     collision::{DynCollision, Relation},
@@ -24,11 +24,12 @@ pub struct CollisionCircle<const ID: usize = 0> {
     init_radius: f32,
 }
 
-impl fmt::Debug for CollisionCircle {
+impl<const ID: usize> fmt::Debug for CollisionCircle<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "CollisionCircle: center = ({}, {}); r = {} x {} = {}",
+            "{}: center = ({}, {}); r = {} x {} = {}",
+            type_name::<Self>(),
             self.center.x,
             self.center.y,
             self.init_radius,
@@ -38,11 +39,36 @@ impl fmt::Debug for CollisionCircle {
     }
 }
 
+impl<const ID: usize> From<&CollisionCircle<ID>> for CollisionCircle<0> {
+    /// Convert the shape with `ID` to the shape with `ID = 0`.
+    /// Used to eliminate the `ID` in the collision detection.
+    fn from(value: &CollisionCircle<ID>) -> Self {
+        Self {
+            center: value.center,
+            scale: value.scale,
+            init_radius: value.init_radius,
+        }
+    }
+}
+
 impl CollisionCircle {
+    /// Create a new circle with `ID = 0`. See [`Self::new_id`] for the version with `ID`.
+    ///
     /// The initial radius is used to compute the size with the GlobalTransform's scale.
     ///
     /// The initial center is covered by the GlobalTransform's translation during the update.
     pub fn new(center: Vec2, radius: f32) -> Self {
+        Self {
+            center,
+            scale: 1.,
+            init_radius: radius,
+        }
+    }
+}
+
+impl<const ID: usize> CollisionCircle<ID> {
+    /// Create a new circle with the given `ID`.
+    pub fn new_id(center: Vec2, radius: f32) -> Self {
         Self {
             center,
             scale: 1.,
@@ -130,7 +156,7 @@ impl Collision<CollisionCircle> for CollisionCircle {
     }
 }
 
-impl UpdateCollision<GlobalTransform> for CollisionCircle {
+impl<const ID: usize> UpdateCollision<GlobalTransform> for CollisionCircle<ID> {
     fn update() -> impl FnOnce(Mut<Self>, &GlobalTransform) {
         |mut circle, global_transform| {
             circle.center = global_transform.translation().truncate();
