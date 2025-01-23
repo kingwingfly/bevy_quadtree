@@ -73,7 +73,7 @@ Function:
 Features:
 - `gizmos`: show gizmos of the quadtree boundaries.
 - `sprite`: enable `CollisionRect` and `CollisionRotatedRect` to track `sprite.custom_size`.
-- `multi-quadtree`: support multiple quadtree in one world.
+- `multi-quadtree`: support multiple quadtrees in one world.
 
 Version:
 
