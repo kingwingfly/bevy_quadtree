@@ -198,7 +198,7 @@ fn pick(
 }
 ```
 
-5. However, you may need manually update collision shapes in some case
+5. However, you may need manually update collision shapes in some cases
 
 ```rust ignore
 xx.observe(
