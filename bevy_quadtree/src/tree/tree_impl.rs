@@ -125,6 +125,7 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
                     }
                 }
                 warn!("{:?} out of QuadTree boundary", entity);
+                self.merge_up(id);
                 changed.push(Change::Leave(entity));
             }
             Relation::Disjoint | Relation::Overlap => {
@@ -132,12 +133,15 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
                 if id > 0 {
                     self.insert((id - 1) >> 2, entity, shape, changed, vec![id]);
                 }
+                self.merge_up(id);
             }
             Relation::Contained => match shape.detect(&self[id].inlet_boundary) {
                 Relation::Disjoint | Relation::Overlap | Relation::Contain => {}
                 Relation::Contained => {
-                    self[id].entities.write().remove(&entity);
+                    // it may no longer overlap with multiple children
+                    self.remove(id, &entity);
                     self.insert(id, entity, shape, changed, vec![]);
+                    // never need to merge up
                 }
             },
         }
@@ -198,9 +202,9 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
         }
     }
 
+    /// Remove the entity from the node.
     pub(crate) fn remove(&self, id: NodeID, entity: &Entity) {
         self[id].entities.write().remove(entity);
-        self.merge_up(id);
     }
 
     fn merge_up(&self, id: NodeID) {

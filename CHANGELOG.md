@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.15.1-alpha12] - 2025-01-23
+
+- fix a bug in merge up empty nodes
+
 ## [0.15.1-alpha11] - 2025-01-23
 
 - multi-quadtree support: see `MultiQuadTreePlugin`
