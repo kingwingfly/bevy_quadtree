@@ -7,7 +7,7 @@ use super::{quad_tree::NodeID, tree_impl::Node};
 use crate::collision::{CollisionQuery, Relation};
 use bevy_ecs::entity::EntityHashSet;
 
-/// A wrapper of root node of the quadtree in order to decrease the number of type parameters.
+/// A wrapper of root node of the quadtree.
 pub(crate) struct QueryTree {
     pub(crate) nodes: *const Node,
     pub(crate) max_length: usize,
