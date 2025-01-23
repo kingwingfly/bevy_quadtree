@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.15.1-beta.1] - 2025-01-23
+
+- this crate is ready, use beta SemVer
+
 ## [0.15.1-alpha12] - 2025-01-23
 
 - fix a bug in merge up empty nodes
