@@ -96,6 +96,7 @@ impl<
     pub(crate) fn remove(&self, entity: &Entity) {
         if let Some(id) = self.entities.write().remove(entity) {
             self.tree.remove(id, entity);
+            self.tree.merge_up(id);
         }
     }
 

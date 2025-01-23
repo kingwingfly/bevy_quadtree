@@ -207,7 +207,7 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
         self[id].entities.write().remove(entity);
     }
 
-    fn merge_up(&self, id: NodeID) {
+    pub(crate) fn merge_up(&self, id: NodeID) {
         if !self[id].is_leaf() {
             return;
         }

@@ -12,17 +12,8 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 ## [0.15.1-beta.1] - 2025-01-23
 
 - this crate is ready, use beta SemVer
-
-## [0.15.1-alpha12] - 2025-01-23
-
 - fix a bug in merge up empty nodes
-
-## [0.15.1-alpha11] - 2025-01-23
-
 - multi-quadtree support: see `MultiQuadTreePlugin`
-
-## [0.15.1-alpha10] - 2025-01-23
-
 - fix doc mistakes
 
 ## [0.15.1-alpha9] - 2025-01-22
