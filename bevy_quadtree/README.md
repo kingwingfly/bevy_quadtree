@@ -147,7 +147,7 @@ cmds.spawn((
     // Spawn collision shape `CollisionRect` with `Sprite`,
     // the plugin will auto-update it following `Changed<GlobalTransform>` and `Changed<Sprite>`
     CollisionRect::from(Rect::from_center_size(pos, CUSTOM_SIZE)),
-    Transform::from_xyz(pos.x, world_pos.y, 1.),
+    Transform::from_xyz(pos.x, pos.y, 1.),
 ))
 ```
 
