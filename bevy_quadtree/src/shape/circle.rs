@@ -5,8 +5,8 @@ use core::fmt;
 use std::any::type_name;
 
 use crate::{
-    collision::{DynCollision, Relation},
-    Collision, CollisionQuery, CollisionRect, CollisionRotatedRect, UpdateCollision,
+    collision::{Collision, CollisionQuery, DynCollision, Relation, UpdateCollision},
+    CollisionRect, CollisionRotatedRect,
 };
 
 /// Circle shape to be used in the QuadTreePlugin

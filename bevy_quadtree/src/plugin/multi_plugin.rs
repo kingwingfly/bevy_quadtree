@@ -23,7 +23,6 @@ use bevy_app::prelude::*;
 ///                 (CollisionCircle, GlobalTransform),
 ///             ),
 ///             // at most 40 objects in each node, 4 levels, 100x100 boundary,
-///             // 100 x 100 boundary size
 ///             // 2.0 = outlet_boundary / inlet_boundary for LooseQuadTree,
 ///             // the ID of this quadtree is 0.
 ///             // query by `Res<QuadTree<40, 4, 100, 100, 20, 0>>` (Set a type alias for it is recommended)

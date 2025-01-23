@@ -4,7 +4,7 @@
 use std::ops::Index;
 
 use super::{quad_tree::NodeID, tree_impl::Node};
-use crate::{collision::Relation, CollisionQuery};
+use crate::collision::{CollisionQuery, Relation};
 use bevy_ecs::entity::EntityHashSet;
 
 /// A wrapper of root node of the quadtree in order to decrease the number of type parameters.
@@ -43,11 +43,7 @@ pub trait QRelation<const D: usize> {
             res.extend(qt[id].entities.read().keys().cloned());
             if !qt[id].is_leaf() && (id << 2) + 4 < <Self as QRelation<D>>::MAX_LEN {
                 for i in (id << 2) + 1..=(id << 2) + 4 {
-                    if !qt[i].is_leaf() {
-                        x.push(i);
-                    } else {
-                        res.extend(qt[i].entities.read().keys().cloned());
-                    }
+                    x.push(i);
                 }
             }
         }

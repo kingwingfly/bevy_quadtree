@@ -9,10 +9,9 @@ pub use multi_plugin::{
     AsQuadTreePluginConfig, MultiQuadTreePlugin, QTConfig, QuadTreePluginConfig,
 };
 
-use crate::collision::AsDynCollision;
+use crate::collision::{AsDynCollision, UpdateCollision};
 use crate::system::{update_collision, update_quadtree};
 use crate::tree::QuadTree;
-use crate::UpdateCollision;
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::{IntoSystemConfigs, SystemConfigs};

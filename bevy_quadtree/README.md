@@ -75,6 +75,11 @@ Features:
 - `sprite`: enable `CollisionRect` and `CollisionRotatedRect` to track `sprite.custom_size`.
 - `multi-quadtree`: support multiple quadtree in one world.
 
+Version:
+
+To align with Bevy, the version is always the same as supported `Bevy`'s version.
+And upgrade will be like `bevy_version.beta.x`
+
 ### Caution
 
 For those who upgrade from version <= 0.15.1-alpha7, pay attention to the new type paramter `D` in `QuadTreePlugin`.

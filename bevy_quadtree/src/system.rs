@@ -1,4 +1,7 @@
-use crate::{collision::AsDynCollision, tree::QuadTree, UpdateCollision};
+use crate::{
+    collision::{AsDynCollision, UpdateCollision},
+    tree::QuadTree,
+};
 use bevy_ecs::prelude::*;
 #[cfg(feature = "gizmos")]
 use bevy_gizmos::prelude::*;

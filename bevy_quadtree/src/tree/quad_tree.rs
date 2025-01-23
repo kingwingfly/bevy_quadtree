@@ -1,16 +1,16 @@
 //! QuadTree
 
-use core::fmt;
-use std::any::type_name;
-
-use super::tree_impl::Change;
 pub(crate) use super::tree_impl::{NodeID, Tree};
-use crate::{collision::AsDynCollision, CollisionQuery, QRelation};
+
+use super::{tree_impl::Change, QRelation};
+use crate::collision::{AsDynCollision, CollisionQuery};
 use bevy_ecs::{
     entity::{EntityHashMap, EntityHashSet},
     prelude::*,
 };
+use core::fmt;
 use parking_lot::RwLock;
+use std::any::type_name;
 
 /// The QuadTree used as `Resource` in this plugin.
 /// The root node boundary's center is (0, 0).
@@ -100,7 +100,7 @@ impl<
         }
     }
 
-    /// Query the entities within the given relation with the boundary [`S: CollisionQuery`](crate::CollisionQuery),
+    /// Query the entities within the given relation with the boundary [`S: CollisionQuery`](crate::collision::CollisionQuery),
     /// such as [`CollisionRect`](crate::CollisionRect), [`CollisionRotatedRect`](crate::CollisionRotatedRect), [`CollisionCircle`](crate::CollisionCircle) and tuple/array of them.
     /// The rule of the relation is defined in [`CollisionQuery::query`] and [`query`](crate::tree::query).
     ///

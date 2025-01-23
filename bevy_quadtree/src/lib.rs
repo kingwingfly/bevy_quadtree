@@ -9,9 +9,9 @@ pub mod shape;
 mod system;
 pub mod tree;
 
-pub use collision::{Collision, CollisionQuery, Disassemble, UpdateCollision};
+pub use collision::Disassemble;
+pub use plugin::QuadTreePlugin;
 #[cfg(feature = "multi-quadtree")]
-pub use plugin::{AsQuadTreePluginConfig, MultiQuadTreePlugin, QTConfig, QuadTreePluginConfig};
-pub use plugin::{QuadTreePlugin, TrackingPair};
+pub use plugin::{MultiQuadTreePlugin, QTConfig, QuadTreePluginConfig};
 pub use shape::{CollisionCircle, CollisionRect, CollisionRotatedRect};
-pub use tree::{All, Contain, Contained, Disjoint, Overlap, QNot, QOr, QRelation, QuadTree};
+pub use tree::{All, Contain, Contained, Disjoint, Overlap, QNot, QOr, QuadTree};

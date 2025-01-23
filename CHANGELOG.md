@@ -9,6 +9,10 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.15.1-beta.2] - 2025-01-23
+
+- improved the organization of public exports (`pub use`) to enhance usability and clarity.
+
 ## [0.15.1-beta.1] - 2025-01-23
 
 - this crate is ready, use beta SemVer

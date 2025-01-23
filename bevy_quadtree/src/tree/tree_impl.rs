@@ -1,5 +1,6 @@
 //! QuadTree inner implementation.
 
+use super::query::QueryTree;
 use crate::{
     collision::{DynCollision, Relation},
     CollisionRect,
@@ -15,8 +16,6 @@ use std::{
     ops::Index,
     sync::atomic::{AtomicBool, Ordering},
 };
-
-use super::query::QueryTree;
 
 pub(crate) type NodeID = usize;
 

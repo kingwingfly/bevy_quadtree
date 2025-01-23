@@ -1,6 +1,6 @@
 use crate::{
-    collision::{DynCollision, Relation},
-    Collision, CollisionCircle, CollisionQuery, CollisionRect, UpdateCollision,
+    collision::{Collision, CollisionQuery, DynCollision, Relation, UpdateCollision},
+    CollisionCircle, CollisionRect,
 };
 use bevy_ecs::prelude::*;
 #[cfg(feature = "sprite")]

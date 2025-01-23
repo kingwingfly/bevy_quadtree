@@ -9,8 +9,8 @@ use core::fmt;
 use std::any::type_name;
 
 use crate::{
-    collision::{DynCollision, Relation},
-    Collision, CollisionCircle, CollisionQuery, CollisionRotatedRect, UpdateCollision,
+    collision::{Collision, CollisionQuery, DynCollision, Relation, UpdateCollision},
+    CollisionCircle, CollisionRotatedRect,
 };
 
 /// Rectagle shape to be used in the QuadTreePlugin
