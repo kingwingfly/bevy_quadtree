@@ -1,4 +1,13 @@
 //! QuadTree Plugin
+//!
+
+#[cfg(feature = "multi-quadtree")]
+mod multi_plugin;
+
+#[cfg(feature = "multi-quadtree")]
+pub use multi_plugin::{
+    AsQuadTreePluginConfig, MultiQuadTreePlugin, QTConfig, QuadTreePluginConfig,
+};
 
 use crate::collision::AsDynCollision;
 use crate::system::{update_collision, update_quadtree};
@@ -9,7 +18,7 @@ use bevy_ecs::prelude::*;
 use bevy_ecs::schedule::{IntoSystemConfigs, SystemConfigs};
 #[cfg(feature = "sprite")]
 use bevy_sprite::Sprite;
-use bevy_transform::components::GlobalTransform;
+use bevy_transform::prelude::*;
 
 /// A Bevy plugin for quadtree.
 /// # Type Parameters
@@ -35,34 +44,37 @@ use bevy_transform::components::GlobalTransform;
 /// `K`: For `LooseQuadTree`, K / 10 = outlet_boundary / inlet_boundary. Set K to 10 by default and 20 is founded best.
 /// K should >= 10. Only if the object move and is **no longer completely contained** by the outlet_boundary will it be inserted again.
 ///
-/// `ID`: If you want different quadtree for different use cases with the same other parameters, set ID to different values.
+/// `ID`: Set a lucky number as you like for the quadtree.
+/// If you want multiple quadtrees, see [`MultiQuadTreePlugin`].
+///
+/// # Example
+/// ```no_run
+/// # #[cfg(feature = "sprite")]
+/// # {
+/// # use bevy_app::prelude::*;
+/// # use bevy_transform::prelude::*;
+/// # use bevy_sprite::Sprite;
+/// use bevy_quadtree::{CollisionCircle, CollisionRect, CollisionRotatedRect, QuadTreePlugin};
+///
+/// App::new()
+///    .add_plugins(QuadTreePlugin::<(
+///             (CollisionCircle, GlobalTransform),
+///             (CollisionRotatedRect, Sprite),
+///             (CollisionRect, (GlobalTransform, Sprite)),
+///         ),
+///         40, 4, 100, 100, 20>::default());
+/// # }
+/// ```
+///
 /// # Panic
-/// 1. duplicated shape in `P`.
+/// 1. duplicated shapes in `P`. (Debug check only)
 ///
 /// e.g. `P = ((CollisionRect, GlobalTransform), (CollisionRect, Sprite))` will lead a debug_assertion failure.
 /// Try `P = (CollisionRect, (GlobalTransform, Sprite))` or `P = ((CollisionRect<0>, GlobalTransform), (CollisionRect<1>, Sprite))` in concret context.
 ///
-/// 2. invalid const parameters.
+/// 2. invalid const parameters. (Debug check only)
 ///
 /// N, D, W, H should > 0. K should >= 10.
-///
-/// # Example
-/// ```no_run
-/// # use bevy_app::prelude::*;
-/// # use bevy_transform::prelude::*;
-/// # #[cfg(feature = "sprite")]
-/// # use bevy_sprite::Sprite;
-/// use bevy_quadtree::{CollisionCircle, CollisionRect, CollisionRotatedRect, QuadTreePlugin};
-///
-/// #[cfg(feature = "sprite")]
-/// App::new()
-///    .add_plugins(QuadTreePlugin::<(
-///             (CollisionCircle, GlobalTransform),
-///             (CollisionRotatedRect, GlobalTransform),
-///             (CollisionRect, Sprite),
-///         ),
-///         40, 4, 100, 100, 20>::default());
-/// ```
 #[derive(Debug)]
 pub struct QuadTreePlugin<
     P,
@@ -200,10 +212,9 @@ macro_rules! impl_tracking_pair_tuple {
         impl<S> TrackingPair for (S, ($($c),+,))
         where
             S: Component + AsDynCollision + $(UpdateCollision<$c>+)+ Clone,
-            $($c: Component),+,
-            $((S, $c): TrackingPair),+,
         {
             fn update_collision() -> SystemConfigs {
+                // update_collision has Mut<S>, so chain them
                 ($(update_collision::<S, $c>),+,).chain()
             }
             fn update_quadtree<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
@@ -240,6 +251,7 @@ macro_rules! impl_tracking_pairs {
                 $([<P $i>]: TrackingPair),+
             {
                 fn update_collision() -> SystemConfigs {
+                    // no duplicate shape in `P`s, so ambiguous_with_all
                     ($([<P $i>]::update_collision()),+,).ambiguous_with_all()
                 }
                 fn update_quadtree<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
@@ -249,7 +261,7 @@ macro_rules! impl_tracking_pairs {
                         let mut set = std::collections::HashMap::new();
                         $(
                             if let Some(dup) = set.insert([<P $i>]::shape_id(), std::any::type_name::<[<P $i>]>()) {
-                                panic!("Duplicate quadtree updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one or use `ID` type parameter of shape.", dup, std::any::type_name::<[<P $i>]>());
+                                panic!("Duplicated quadtree updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one or use `ID` type parameter of shape.", dup, std::any::type_name::<[<P $i>]>());
                             }
                         );+
                     }
@@ -263,7 +275,7 @@ macro_rules! impl_tracking_pairs {
                         let mut set = std::collections::HashMap::new();
                         $(
                             if let Some(dup) = set.insert([<P $i>]::shape_id(), std::any::type_name::<[<P $i>]>()) {
-                                panic!("Duplicate gizmos box updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one or use `ID` type parameter of shape.", dup, std::any::type_name::<[<P $i>]>());
+                                panic!("Duplicated gizmos box updating system added:\n<{}>\n<{}>\nThey have the same collision shape, merge them into one or use `ID` type parameter of shape.", dup, std::any::type_name::<[<P $i>]>());
                             }
                         );+
                     }
@@ -271,7 +283,7 @@ macro_rules! impl_tracking_pairs {
                 }
                 #[cfg(debug_assertions)]
                 fn shape_id() -> std::any::TypeId {
-                    unreachable!()
+                    unreachable!("only (S, C) and ((S1, C), (S2, C), ...) are allowed")
                 }
             }
         }
@@ -295,7 +307,7 @@ mod tests {
     use crate::{CollisionCircle, CollisionRect, CollisionRotatedRect};
 
     #[test]
-    #[should_panic(expected = "Duplicate quadtree updating system added")]
+    #[should_panic(expected = "Duplicated quadtree updating system added")]
     fn duplicate_shape1() {
         App::new().add_plugins(QuadTreePlugin::<
             (
@@ -312,7 +324,7 @@ mod tests {
 
     #[cfg(feature = "sprite")]
     #[test]
-    #[should_panic(expected = "Duplicate quadtree updating system added")]
+    #[should_panic(expected = "Duplicated quadtree updating system added")]
     fn duplicate_shape2() {
         App::new().add_plugins(QuadTreePlugin::<
             ((CollisionRect, GlobalTransform), (CollisionRect, Sprite)),
@@ -326,7 +338,7 @@ mod tests {
 
     #[cfg(feature = "sprite")]
     #[test]
-    #[should_panic(expected = "Duplicate quadtree updating system added")]
+    #[should_panic(expected = "Duplicated quadtree updating system added")]
     fn duplicate_shape3() {
         App::new().add_plugins(QuadTreePlugin::<
             (
@@ -366,6 +378,22 @@ mod tests {
             (
                 (CollisionCircle<0>, GlobalTransform),
                 (CollisionCircle<1>, GlobalTransform),
+            ),
+            40,
+            4,
+            100,
+            100,
+            20,
+        >::default());
+    }
+
+    #[cfg(feature = "sprite")]
+    #[test]
+    fn plugin_test_tuple() {
+        App::new().add_plugins(QuadTreePlugin::<
+            (
+                (CollisionRect<0>, (GlobalTransform, Sprite)),
+                (CollisionRect<1>, GlobalTransform),
             ),
             40,
             4,

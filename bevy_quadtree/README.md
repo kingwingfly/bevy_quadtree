@@ -73,6 +73,7 @@ Function:
 Features:
 - `gizmos`: show gizmos of the quadtree boundaries.
 - `sprite`: enable `CollisionRect` and `CollisionRotatedRect` to track `sprite.custom_size`.
+- `multi-quadtree`: support multiple quadtree in one world.
 
 ### Caution
 
@@ -104,14 +105,14 @@ bevy_quadtree = { version = "0.15.1" }
 2. Add the plugin to your Bevy app:
 
 ```rust no_run
+# #[cfg(feature = "sprite")]
+{
 # use bevy_app::prelude::*;
 # use bevy_transform::prelude::*;
-# #[cfg(feature = "sprite")]
 # use bevy_sprite::Sprite;
 use bevy_quadtree::{QuadTreePlugin, CollisionCircle, CollisionRect};
 
 fn main() {
-    #[cfg(feature = "sprite")]
     App::new()
         .add_plugins(QuadTreePlugin::<(
                 (CollisionCircle, GlobalTransform), (CollisionRect, (GlobalTransform, Sprite)),
@@ -125,6 +126,7 @@ fn main() {
         // 20 / 10 = 2 = outlet_boundary / inlet_boundary (for loose quadtree)
         .run();
 }
+# }
 ```
 
 3. Spawn CollisionShapes as Components:

@@ -32,3 +32,4 @@ rand_chacha = { version = "0.3.1", default-features = false }
 default = []
 sprite = ["dep:bevy_sprite"]
 gizmos = ["dep:bevy_gizmos", "dep:bevy_color"]
+multi-quadtree = []

@@ -8,11 +8,13 @@ statements=(
     "cargo clippy --no-default-features -- -D warnings"
     "cargo clippy -F gizmos -- -D warnings"
     "cargo clippy -F sprite -- -D warnings"
-    "cargo clippy -F sprite,gizmos -- -D warnings"
+    "cargo clippy -F multi-quadtree -- -D warnings"
+    "cargo clippy --all-features -- -D warnings"
 
     "cargo test --no-default-features"
     "cargo test -F gizmos"
-    "cargo test -F sprite --doc"
+    "cargo test -F sprite"
+    "cargo test -F multi-quadtree"
     "cargo test --all-features"
 
     "cargo doc --no-deps --all-features"
