@@ -22,11 +22,11 @@ use bevy_app::prelude::*;
 ///                 // CollisionCircle with default ID 0, follows GlobalTransform
 ///                 (CollisionCircle, GlobalTransform),
 ///             ),
-///             // at most 40 objects in each node, 4 levels, 100x100 boundary,
+///             // at most 40 objects in each node, 4 levels, 100x100 boundary, center at (0, 0)
 ///             // 2.0 = outlet_boundary / inlet_boundary for LooseQuadTree,
 ///             // the ID of this quadtree is 0.
-///             // query by `Res<QuadTree<40, 4, 100, 100, 20, 0>>` (Set a type alias for it is recommended)
-///             40, 4, 100, 100, 20, 0>,
+///             // query by `Res<QuadTree<0>>`
+///             40, 4, 100, 100, 0, 0, 20, 0>,
 ///         QTConfig::<(
 ///                 // CollisionRect with ID 1, follows GlobalTransform and Sprite
 ///                 (CollisionRect<1>, (GlobalTransform, Sprite)),
@@ -34,8 +34,8 @@ use bevy_app::prelude::*;
 ///                 (CollisionCircle<1>, GlobalTransform),
 ///             ),
 ///             // The same attribute as the previous one, but the ID is 1.
-///             // query by `Res<QuadTree<40, 4, 100, 100, 20, 1>>`
-///             40, 4, 100, 100, 20, 1>,
+///             // query by `Res<QuadTree<1>>`
+///             40, 4, 100, 100, 0, 0, 20, 1>,
 ///         )>::default());
 /// # }
 /// ```
@@ -43,7 +43,7 @@ use bevy_app::prelude::*;
 /// # Panic
 /// 1. duplicated quadtree added. (Debug check only)
 ///
-/// e.g. (QTConfig<..., 40, 4, 100, 100, 20, 0>, QTConfig<..., 40, 4, 100, 100, 20, 0>)
+/// e.g. (QTConfig<..., 40, 4, 100, 100, 0, 0, 20, 0>, QTConfig<..., 40, 4, 100, 100, 0, 0, 20, 0>)
 /// they both insert the same `QuadTree` into the world.
 ///
 /// 2. duplicated shapes in the same quadtree. (Debug check only)
@@ -84,23 +84,27 @@ where
 /// Type alias for [`QuadTreePluginConfig`]
 pub type QTConfig<
     P,
+    const ID: usize,
     const N: usize,
     const D: usize,
     const W: usize,
     const H: usize,
-    const K: usize,
-    const ID: usize,
-> = QuadTreePluginConfig<P, N, D, W, H, K, ID>;
+    const X: usize = 0,
+    const Y: usize = 0,
+    const K: usize = 20,
+> = QuadTreePluginConfig<P, ID, N, D, W, H, X, Y, K>;
 
 /// QuadTreePluginConfig. See [`AsQuadTreePluginConfig`] for more information.
 pub struct QuadTreePluginConfig<
     P,
+    const ID: usize,
     const N: usize,
     const D: usize,
     const W: usize,
     const H: usize,
-    const K: usize,
-    const ID: usize,
+    const X: usize = 0,
+    const Y: usize = 0,
+    const K: usize = 20,
 > where
     P: TrackingPair,
 {
@@ -118,13 +122,15 @@ pub trait AsQuadTreePluginConfig: Send + Sync + 'static {
 
 impl<
         P,
+        const ID: usize,
         const N: usize,
         const D: usize,
         const W: usize,
         const H: usize,
+        const X: usize,
+        const Y: usize,
         const K: usize,
-        const ID: usize,
-    > AsQuadTreePluginConfig for QuadTreePluginConfig<P, N, D, W, H, K, ID>
+    > AsQuadTreePluginConfig for QuadTreePluginConfig<P, ID, N, D, W, H, X, Y, K>
 where
     P: TrackingPair,
 {
@@ -134,15 +140,15 @@ where
         assert!(W > 0, "W should > 0");
         assert!(H > 0, "H should > 0");
         assert!(K >= 10, "K should >= 10");
-        app.init_resource::<QuadTree<N, D, W, H, K, ID>>()
+        app.insert_resource(QuadTree::<ID>::new(N, D, W, H, X, Y, K))
             .add_systems(PreUpdate, P::update_collision())
-            .add_systems(Update, P::update_quadtree::<N, D, W, H, K, ID>());
+            .add_systems(Update, P::update_quadtree::<ID>());
         #[cfg(feature = "gizmos")]
-        app.add_systems(PostUpdate, P::show_boundary::<N, D, W, H, K, ID>());
+        app.add_systems(PostUpdate, P::show_boundary::<ID>());
     }
 
     fn tree_id() -> std::any::TypeId {
-        std::any::TypeId::of::<QuadTree<N, D, W, H, K, ID>>()
+        std::any::TypeId::of::<QuadTree<ID>>()
     }
 }
 
@@ -159,7 +165,7 @@ macro_rules! impl_plugin_config {
                         let mut set = std::collections::HashMap::new();
                         $(
                             if let Some(dup) = set.insert([<C $i>]::tree_id(), std::any::type_name::<[<C $i>]>()) {
-                                panic!("Duplicated quadtrees added:\n<{}>\n<{}>\nThey have the same attributes and ID, assign different IDs for them.", dup, std::any::type_name::<[<C $i>]>());
+                                panic!("Duplicated quadtrees added:\n<{}>\n<{}>\nThey have the same ID, assign different IDs for them.", dup, std::any::type_name::<[<C $i>]>());
                             }
                         );+
                     }
@@ -201,24 +207,28 @@ mod tests {
                     (CollisionCircle<0>, GlobalTransform),
                     (CollisionCircle<1>, GlobalTransform),
                 ),
+                0,
                 40,
                 4,
                 100,
                 100,
-                20,
                 0,
+                0,
+                20,
             >,
             QTConfig<
                 (
                     (CollisionCircle<2>, GlobalTransform),
                     (CollisionCircle<3>, GlobalTransform),
                 ),
+                0,
                 40,
                 4,
                 100,
                 100,
-                20,
                 0,
+                0,
+                20,
             >,
         )>::default());
     }
@@ -231,12 +241,14 @@ mod tests {
                     (CollisionCircle<0>, GlobalTransform),
                     (CollisionCircle<1>, GlobalTransform),
                 ),
+                0,
                 40,
                 4,
                 100,
                 100,
-                20,
                 0,
+                0,
+                20,
             >,
         >::default());
     }
@@ -249,24 +261,28 @@ mod tests {
                     (CollisionCircle<0>, GlobalTransform),
                     (CollisionCircle<1>, GlobalTransform),
                 ),
+                0,
                 40,
                 4,
                 100,
                 100,
-                20,
                 0,
+                0,
+                20,
             >,
             QTConfig<
                 (
                     (CollisionCircle<0>, GlobalTransform),
                     (CollisionCircle<1>, GlobalTransform),
                 ),
+                1,
                 40,
                 4,
                 100,
                 100,
+                0,
+                0,
                 20,
-                1,
             >,
         )>::default());
     }

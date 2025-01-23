@@ -8,13 +8,16 @@ use crate::collision::{CollisionQuery, Relation};
 use bevy_ecs::entity::EntityHashSet;
 
 /// A wrapper of root node of the quadtree in order to decrease the number of type parameters.
-pub(crate) struct QueryTree<const D: usize, const K: usize>(pub(crate) *const Node<K>);
+pub(crate) struct QueryTree {
+    pub(crate) nodes: *const Node,
+    pub(crate) max_length: usize,
+}
 
-impl<const D: usize, const K: usize> Index<usize> for QueryTree<D, K> {
-    type Output = Node<K>;
+impl Index<usize> for QueryTree {
+    type Output = Node;
 
     fn index(&self, index: usize) -> &Self::Output {
-        unsafe { &*self.0.add(index) }
+        unsafe { &*self.nodes.add(index) }
     }
 }
 
@@ -27,21 +30,18 @@ pub struct QNot<T>(core::marker::PhantomData<T>);
 ///
 /// There is no `QAnd` because all the filters do not overlap, e.g. `QAnd<(Disjoint, Contain)>` is always empty.
 #[allow(missing_docs)]
-pub trait QRelation<const D: usize> {
-    const MAX_LEN: usize = (4usize.pow(D as u32) - 1) / 3;
-
+pub trait QRelation {
     // filter the entities that satisfy the relation.
     //
     // Methods related to `QueryTree` are all private, if you need them, please open an issue.
-    fn filter<const K: usize>(qt: &QueryTree<D, K>, boundary: &dyn CollisionQuery)
-        -> EntityHashSet;
+    fn filter(qt: &QueryTree, boundary: &dyn CollisionQuery) -> EntityHashSet;
 
-    fn all<const K: usize>(qt: &QueryTree<D, K>, id: NodeID) -> EntityHashSet {
+    fn all(qt: &QueryTree, id: NodeID) -> EntityHashSet {
         let mut res = EntityHashSet::default();
         let mut x = vec![id];
         while let Some(id) = x.pop() {
             res.extend(qt[id].entities.read().keys().cloned());
-            if !qt[id].is_leaf() && (id << 2) + 4 < <Self as QRelation<D>>::MAX_LEN {
+            if !qt[id].is_leaf() && (id << 2) + 4 < qt.max_length {
                 for i in (id << 2) + 1..=(id << 2) + 4 {
                     x.push(i);
                 }
@@ -62,17 +62,14 @@ pub struct Contained;
 /// all
 pub struct All;
 
-impl<const D: usize> QRelation<D> for All {
-    fn filter<const K: usize>(qt: &QueryTree<D, K>, _: &dyn CollisionQuery) -> EntityHashSet {
+impl QRelation for All {
+    fn filter(qt: &QueryTree, _: &dyn CollisionQuery) -> EntityHashSet {
         Self::all(qt, 0)
     }
 }
 
-impl<const D: usize> QRelation<D> for Disjoint {
-    fn filter<const K: usize>(
-        qt: &QueryTree<D, K>,
-        boundary: &dyn CollisionQuery,
-    ) -> EntityHashSet {
+impl QRelation for Disjoint {
+    fn filter(qt: &QueryTree, boundary: &dyn CollisionQuery) -> EntityHashSet {
         let mut res = EntityHashSet::default();
         let mut x = vec![0];
         while let Some(id) = x.pop() {
@@ -84,7 +81,7 @@ impl<const D: usize> QRelation<D> for Disjoint {
                             res.insert(*entity);
                         }
                     }
-                    if !qt[id].is_leaf() && (id << 2) + 4 < <Self as QRelation<D>>::MAX_LEN {
+                    if !qt[id].is_leaf() && (id << 2) + 4 < qt.max_length {
                         for i in (id << 2) + 1..=(id << 2) + 4 {
                             x.push(i);
                         }
@@ -96,11 +93,8 @@ impl<const D: usize> QRelation<D> for Disjoint {
         res
     }
 }
-impl<const D: usize> QRelation<D> for Overlap {
-    fn filter<const K: usize>(
-        qt: &QueryTree<D, K>,
-        boundary: &dyn CollisionQuery,
-    ) -> EntityHashSet {
+impl QRelation for Overlap {
+    fn filter(qt: &QueryTree, boundary: &dyn CollisionQuery) -> EntityHashSet {
         let mut res = EntityHashSet::default();
         let mut x = vec![0];
         while let Some(id) = x.pop() {
@@ -112,7 +106,7 @@ impl<const D: usize> QRelation<D> for Overlap {
                             res.insert(*entity);
                         }
                     }
-                    if !qt[id].is_leaf() && (id << 2) + 4 < <Self as QRelation<D>>::MAX_LEN {
+                    if !qt[id].is_leaf() && (id << 2) + 4 < qt.max_length {
                         for i in (id << 2) + 1..=(id << 2) + 4 {
                             x.push(i);
                         }
@@ -123,11 +117,8 @@ impl<const D: usize> QRelation<D> for Overlap {
         res
     }
 }
-impl<const D: usize> QRelation<D> for Contain {
-    fn filter<const K: usize>(
-        qt: &QueryTree<D, K>,
-        boundary: &dyn CollisionQuery,
-    ) -> EntityHashSet {
+impl QRelation for Contain {
+    fn filter(qt: &QueryTree, boundary: &dyn CollisionQuery) -> EntityHashSet {
         let mut res = EntityHashSet::default();
         let mut x = vec![0];
         while let Some(id) = x.pop() {
@@ -140,7 +131,7 @@ impl<const D: usize> QRelation<D> for Contain {
                             res.insert(*entity);
                         }
                     }
-                    if !qt[id].is_leaf() && (id << 2) + 4 < <Self as QRelation<D>>::MAX_LEN {
+                    if !qt[id].is_leaf() && (id << 2) + 4 < qt.max_length {
                         for i in (id << 2) + 1..=(id << 2) + 4 {
                             x.push(i);
                         }
@@ -151,11 +142,8 @@ impl<const D: usize> QRelation<D> for Contain {
         res
     }
 }
-impl<const D: usize> QRelation<D> for Contained {
-    fn filter<const K: usize>(
-        qt: &QueryTree<D, K>,
-        boundary: &dyn CollisionQuery,
-    ) -> EntityHashSet {
+impl QRelation for Contained {
+    fn filter(qt: &QueryTree, boundary: &dyn CollisionQuery) -> EntityHashSet {
         let mut res = EntityHashSet::default();
         let mut x = vec![0];
         while let Some(id) = x.pop() {
@@ -167,7 +155,7 @@ impl<const D: usize> QRelation<D> for Contained {
                             res.insert(*entity);
                         }
                     }
-                    if !qt[id].is_leaf() && (id << 2) + 4 < <Self as QRelation<D>>::MAX_LEN {
+                    if !qt[id].is_leaf() && (id << 2) + 4 < qt.max_length {
                         for i in (id << 2) + 1..=(id << 2) + 4 {
                             x.push(i);
                         }
@@ -181,11 +169,11 @@ impl<const D: usize> QRelation<D> for Contained {
 
 macro_rules! impl_or_relation {
     ($($t: ident),+) => {
-        impl<const D: usize, $($t),+> QRelation<D> for QOr<($($t),+,)>
-        where $($t: QRelation<D>),+
+        impl<$($t),+> QRelation for QOr<($($t),+,)>
+        where $($t: QRelation),+
         {
-            fn filter<const K: usize>(
-                qt: &QueryTree<D, K>,
+            fn filter(
+                qt: &QueryTree,
                 boundary: &dyn CollisionQuery,
             ) -> EntityHashSet {
                 let mut res = EntityHashSet::default();
@@ -204,9 +192,9 @@ impl_or_relation!(R0, R1, R2, R3);
 macro_rules! impl_not_relation {
     ($($r: ident), +) => {
         $(
-            impl<const D: usize> QRelation<D> for QNot<$r> {
-                fn filter<const K: usize>(
-                    qt: &QueryTree<D, K>,
+            impl QRelation for QNot<$r> {
+                fn filter(
+                    qt: &QueryTree,
                     boundary: &dyn CollisionQuery,
                 ) -> EntityHashSet {
                     let tmp = $r::filter(qt, boundary);

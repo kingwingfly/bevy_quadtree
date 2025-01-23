@@ -15,44 +15,12 @@ use std::any::type_name;
 /// The QuadTree used as `Resource` in this plugin.
 /// The root node boundary's center is (0, 0).
 #[derive(Resource)]
-pub struct QuadTree<
-    const N: usize,
-    const D: usize,
-    const W: usize,
-    const H: usize,
-    const K: usize = 10,
-    const ID: usize = 0,
-> {
-    pub(crate) tree: Tree<N, D, W, H, K>,
+pub struct QuadTree<const ID: usize = 0> {
+    pub(crate) tree: Tree,
     pub(crate) entities: RwLock<EntityHashMap<NodeID>>,
 }
 
-impl<
-        const N: usize,
-        const D: usize,
-        const W: usize,
-        const H: usize,
-        const K: usize,
-        const ID: usize,
-    > Default for QuadTree<N, D, W, H, K, ID>
-{
-    fn default() -> Self {
-        Self {
-            tree: Tree::new(),
-            entities: RwLock::new(EntityHashMap::default()),
-        }
-    }
-}
-
-impl<
-        const N: usize,
-        const D: usize,
-        const W: usize,
-        const H: usize,
-        const K: usize,
-        const ID: usize,
-    > fmt::Debug for QuadTree<N, D, W, H, K, ID>
-{
+impl<const ID: usize> fmt::Debug for QuadTree<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(type_name::<Self>())
             .field("tree", &self.tree)
@@ -61,15 +29,22 @@ impl<
     }
 }
 
-impl<
-        const N: usize,
-        const D: usize,
-        const W: usize,
-        const H: usize,
-        const K: usize,
-        const ID: usize,
-    > QuadTree<N, D, W, H, K, ID>
-{
+impl<const ID: usize> QuadTree<ID> {
+    pub(crate) fn new(
+        n: usize,
+        d: usize,
+        w: usize,
+        h: usize,
+        x: usize,
+        y: usize,
+        k: usize,
+    ) -> Self {
+        Self {
+            tree: Tree::new(n, d, w as f32, h as f32, x as f32, y as f32, k as f32 / 10.),
+            entities: RwLock::new(EntityHashMap::default()),
+        }
+    }
+
     fn len(&self) -> usize {
         self.entities.read().len()
     }
@@ -108,7 +83,7 @@ impl<
     /// [`Contain`](crate::Contain), [`Contained`](crate::Contained), [`QOr`](crate::QOr), [`QNot`](crate::QNot).
     pub fn query<Q>(&self, boundary: &dyn CollisionQuery) -> EntityHashSet
     where
-        Q: QRelation<D>,
+        Q: QRelation,
     {
         Q::filter(&self.tree.query_tree(), boundary)
     }
@@ -124,7 +99,7 @@ mod tests {
 
     #[test]
     fn non_loose() {
-        let qtree: QuadTree<2, 4, 4, 4> = QuadTree::default();
+        let qtree: QuadTree<0> = QuadTree::new(2, 4, 4, 4, 0, 0, 10);
         let mut rng = ChaCha8Rng::seed_from_u64(0);
         assert_eq!(qtree.len(), 0);
         // (0, 0) r = 1

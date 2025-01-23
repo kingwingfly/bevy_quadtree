@@ -1,6 +1,5 @@
 //! QuadTree inner implementation.
 
-use super::query::QueryTree;
 use crate::{
     collision::{DynCollision, Relation},
     CollisionRect,
@@ -17,31 +16,21 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
+use super::query::QueryTree;
+
 pub(crate) type NodeID = usize;
 
-pub(crate) struct Tree<
-    const N: usize,
-    const D: usize,
-    const W: usize,
-    const H: usize,
-    const K: usize,
-> {
-    nodes: *mut Node<K>,
+pub(crate) struct Tree {
+    nodes: *mut Node,
+    max_length: usize,
+    n: usize,
 }
 
-unsafe impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize> Send
-    for Tree<N, D, W, H, K>
-{
-}
+unsafe impl Send for Tree {}
 
-unsafe impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize> Sync
-    for Tree<N, D, W, H, K>
-{
-}
+unsafe impl Sync for Tree {}
 
-impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize> fmt::Debug
-    for Tree<N, D, W, H, K>
-{
+impl fmt::Debug for Tree {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(type_name::<Self>())
             .field("total", &self.total(0))
@@ -49,49 +38,46 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
     }
 }
 
-impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize> Index<usize>
-    for Tree<N, W, H, D, K>
-{
-    type Output = Node<K>;
+impl Index<usize> for Tree {
+    type Output = Node;
 
     fn index(&self, index: usize) -> &Self::Output {
         unsafe { &*self.nodes.add(index) }
     }
 }
 
-impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize> Drop
-    for Tree<N, D, W, H, K>
-{
+impl Drop for Tree {
     fn drop(&mut self) {
         unsafe {
-            let layout = Layout::array::<Node<K>>(Self::MAX_LEN).expect("`D` is too large");
+            let layout = Layout::array::<Node>(self.max_length).expect("`D` is too large");
             dealloc(self.nodes as *mut u8, layout);
         }
     }
 }
 
-impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize>
-    Tree<N, D, W, H, K>
-{
-    const MAX_LEN: usize = (4usize.pow(D as u32) - 1) / 3;
-
-    pub(crate) fn new() -> Self {
+impl Tree {
+    pub(crate) fn new(n: usize, d: usize, w: f32, h: f32, x: f32, y: f32, k: f32) -> Self {
         unsafe {
-            let layout = Layout::array::<Node<K>>(Self::MAX_LEN).expect("`D` is too large");
-            let nodes = alloc(layout) as *mut Node<K>;
+            let max_length = (4usize.pow(d as u32) - 1) / 3;
+            let layout = Layout::array::<Node>(max_length).expect("`D` is too large");
+            let nodes = alloc(layout) as *mut Node;
             nodes.write(Node::root(Rect::from_center_size(
-                Vec2::ZERO,
-                Vec2::new(W as f32, H as f32),
+                Vec2::new(x, y),
+                Vec2::new(w, h),
             )));
             let mut i = 1;
-            while i < Self::MAX_LEN {
+            while i < max_length {
                 let p = (i - 1) >> 2;
-                for c in (*nodes.add(p)).birth() {
+                for c in (*nodes.add(p)).birth(k) {
                     nodes.add(i).write(c);
                     i += 1;
                 }
             }
-            Self { nodes }
+            Self {
+                nodes,
+                max_length,
+                n,
+            }
         }
     }
 
@@ -156,7 +142,7 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
     ) {
         'a: loop {
             if self[id].is_leaf() {
-                if self[id].len() < N || (id << 2) + 1 >= Self::MAX_LEN {
+                if self[id].len() < self.n || (id << 2) + 1 >= self.max_length {
                     self[id].insert(entity, shape);
                     changed.push(Change::Move(entity, id));
                     return;
@@ -231,19 +217,22 @@ impl<const N: usize, const D: usize, const W: usize, const H: usize, const K: us
         }
     }
 
-    pub(crate) fn query_tree(&self) -> QueryTree<D, K> {
-        QueryTree(self.nodes)
+    pub(crate) fn query_tree(&self) -> QueryTree {
+        QueryTree {
+            nodes: self.nodes,
+            max_length: self.max_length,
+        }
     }
 }
 
-pub(crate) struct Node<const K: usize> {
+pub(crate) struct Node {
     pub(crate) entities: RwLock<EntityHashMap<Box<dyn DynCollision>>>,
     pub(crate) inlet_boundary: CollisionRect,
     pub(crate) outlet_boundary: CollisionRect,
     leaf: AtomicBool,
 }
 
-impl<const K: usize> fmt::Debug for Node<K> {
+impl fmt::Debug for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct(type_name::<Self>())
             .field("entities", &self.len())
@@ -251,7 +240,7 @@ impl<const K: usize> fmt::Debug for Node<K> {
     }
 }
 
-impl<const K: usize> Node<K> {
+impl Node {
     fn root(boundary: Rect) -> Self {
         Self {
             entities: RwLock::new(EntityHashMap::default()),
@@ -261,15 +250,11 @@ impl<const K: usize> Node<K> {
         }
     }
 
-    fn new(boundary: Rect) -> Self {
+    fn new(boundary: Rect, k: f32) -> Self {
         Self {
             entities: RwLock::new(EntityHashMap::default()),
             inlet_boundary: boundary.into(),
-            outlet_boundary: Rect::from_center_size(
-                boundary.center(),
-                boundary.size() * const { K as f32 / 10. },
-            )
-            .into(),
+            outlet_boundary: Rect::from_center_size(boundary.center(), boundary.size() * k).into(),
             leaf: AtomicBool::new(true),
         }
     }
@@ -282,7 +267,7 @@ impl<const K: usize> Node<K> {
         self.leaf.load(Ordering::Acquire)
     }
 
-    fn birth(&self) -> [Self; 4] {
+    fn birth(&self, k: f32) -> [Self; 4] {
         const MIN: [Vec2; 4] = [
             Vec2::new(1., 1.),
             Vec2::new(0., 1.),
@@ -302,7 +287,7 @@ impl<const K: usize> Node<K> {
                 min: min + MIN[i] * delta,
                 max: min + MAX[i] * delta,
             };
-            Self::new(boundary)
+            Self::new(boundary, k)
         })
     }
 

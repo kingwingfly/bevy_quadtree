@@ -38,9 +38,9 @@ use bevy_transform::prelude::*;
 ///
 /// `W`: The width of the root node boundary.
 /// `H`: The height of the root node boundary.
-/// The boundary's center is (0, 0).
+/// The boundary's center is (`X`, `Y`).
 ///
-/// `K`: For `LooseQuadTree`, K / 10 = outlet_boundary / inlet_boundary. Set K to 10 by default and 20 is founded best.
+/// `K`: For `LooseQuadTree`, K / 10 = outlet_boundary / inlet_boundary. K is set to 20 by default.
 /// K should >= 10. Only if the object move and is **no longer completely contained** by the outlet_boundary will it be inserted again.
 ///
 /// `ID`: Set a lucky number as you like for the quadtree.
@@ -61,7 +61,7 @@ use bevy_transform::prelude::*;
 ///             (CollisionRotatedRect, Sprite),
 ///             (CollisionRect, (GlobalTransform, Sprite)),
 ///         ),
-///         40, 4, 100, 100, 20>::default());
+///         40, 4, 100, 100, 0, 0, 20>::default());
 /// # }
 /// ```
 ///
@@ -81,7 +81,9 @@ pub struct QuadTreePlugin<
     const D: usize,
     const W: usize,
     const H: usize,
-    const K: usize = 10,
+    const X: usize = 0,
+    const Y: usize = 0,
+    const K: usize = 20,
     const ID: usize = 0,
 > where
     P: TrackingPair,
@@ -95,9 +97,11 @@ impl<
         const N: usize,
         const W: usize,
         const H: usize,
+        const X: usize,
+        const Y: usize,
         const K: usize,
         const ID: usize,
-    > Default for QuadTreePlugin<P, N, D, W, H, K, ID>
+    > Default for QuadTreePlugin<P, N, D, W, H, X, Y, K, ID>
 where
     P: TrackingPair,
 {
@@ -114,9 +118,11 @@ impl<
         const D: usize,
         const W: usize,
         const H: usize,
+        const X: usize,
+        const Y: usize,
         const K: usize,
         const ID: usize,
-    > Plugin for QuadTreePlugin<P, N, D, W, H, K, ID>
+    > Plugin for QuadTreePlugin<P, N, D, W, H, X, Y, K, ID>
 where
     P: TrackingPair,
 {
@@ -126,11 +132,11 @@ where
         assert!(W > 0, "W should > 0");
         assert!(H > 0, "H should > 0");
         assert!(K >= 10, "K should >= 10");
-        app.init_resource::<QuadTree<N, D, W, H, K, ID>>()
+        app.insert_resource(QuadTree::<ID>::new(N, D, W, H, X, Y, K))
             .add_systems(PreUpdate, P::update_collision())
-            .add_systems(Update, P::update_quadtree::<N, D, W, H, K, ID>());
+            .add_systems(Update, P::update_quadtree::<ID>());
         #[cfg(feature = "gizmos")]
-        app.add_systems(PostUpdate, P::show_boundary::<N, D, W, H, K, ID>());
+        app.add_systems(PostUpdate, P::show_boundary::<ID>());
     }
 }
 
@@ -140,24 +146,10 @@ pub trait TrackingPair: Send + Sync + 'static {
     /// return the system to update collision
     fn update_collision() -> SystemConfigs;
     /// return the system to update quadtree
-    fn update_quadtree<
-        const N: usize,
-        const D: usize,
-        const W: usize,
-        const H: usize,
-        const K: usize,
-        const ID: usize,
-    >() -> SystemConfigs;
+    fn update_quadtree<const ID: usize>() -> SystemConfigs;
     /// return the system to show box
     #[cfg(feature = "gizmos")]
-    fn show_boundary<
-        const N: usize,
-        const D: usize,
-        const W: usize,
-        const H: usize,
-        const K: usize,
-        const ID: usize,
-    >() -> SystemConfigs;
+    fn show_boundary<const ID: usize>() -> SystemConfigs;
     /// return the shape id, to ensure no duplicate shape updating system added
     #[cfg(debug_assertions)]
     fn shape_id() -> std::any::TypeId;
@@ -172,27 +164,13 @@ macro_rules! impl_tracking_pair {
             fn update_collision() -> SystemConfigs {
                 update_collision::<S, $c>.ambiguous_with_all()
             }
-            fn update_quadtree<
-                const N: usize,
-                const D: usize,
-                const W: usize,
-                const H: usize,
-                const K: usize,
-                const ID: usize,
-            >() -> SystemConfigs {
-                update_quadtree::<S, N, D, W, H, K, ID>.ambiguous_with_all()
+            fn update_quadtree<const ID: usize>() -> SystemConfigs {
+                update_quadtree::<S, ID>.ambiguous_with_all()
             }
             #[cfg(feature = "gizmos")]
-            fn show_boundary<
-                const N: usize,
-                const D: usize,
-                const W: usize,
-                const H: usize,
-                const K: usize,
-                const ID: usize,
-            >() -> SystemConfigs {
+            fn show_boundary<const ID: usize>() -> SystemConfigs {
                 use crate::system::show_boundary;
-                show_boundary::<S, N, D, W, H, K, ID>.ambiguous_with_all()
+                show_boundary::<S, ID>.ambiguous_with_all()
             }
             #[cfg(debug_assertions)]
             fn shape_id() -> std::any::TypeId {
@@ -216,15 +194,15 @@ macro_rules! impl_tracking_pair_tuple {
                 // update_collision has Mut<S>, so chain them
                 ($(update_collision::<S, $c>),+,).chain()
             }
-            fn update_quadtree<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+            fn update_quadtree<const ID: usize>(
             ) -> SystemConfigs {
-                update_quadtree::<S, N, D, W, H, K, ID>.ambiguous_with_all()
+                update_quadtree::<S, ID>.ambiguous_with_all()
             }
             #[cfg(feature = "gizmos")]
-            fn show_boundary<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+            fn show_boundary<const ID: usize>(
             ) -> SystemConfigs {
                 use crate::system::show_boundary;
-                show_boundary::<S, N, D, W, H, K, ID>.ambiguous_with_all()
+                show_boundary::<S, ID>.ambiguous_with_all()
             }
             #[cfg(debug_assertions)]
             fn shape_id() -> std::any::TypeId {
@@ -253,7 +231,7 @@ macro_rules! impl_tracking_pairs {
                     // no duplicate shape in `P`s, so ambiguous_with_all
                     ($([<P $i>]::update_collision()),+,).ambiguous_with_all()
                 }
-                fn update_quadtree<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+                fn update_quadtree<const ID: usize>(
                 ) -> SystemConfigs {
                     #[cfg(debug_assertions)]
                     {
@@ -264,10 +242,10 @@ macro_rules! impl_tracking_pairs {
                             }
                         );+
                     }
-                    ($([<P $i>]::update_quadtree::<N, D, W, H, K, ID>()),+,).ambiguous_with_all()
+                    ($([<P $i>]::update_quadtree::<ID>()),+,).ambiguous_with_all()
                 }
                 #[cfg(feature = "gizmos")]
-                fn show_boundary<const N: usize, const D: usize, const W: usize, const H: usize, const K: usize, const ID: usize>(
+                fn show_boundary<const ID: usize>(
                 ) -> SystemConfigs {
                     #[cfg(debug_assertions)]
                     {
@@ -278,7 +256,7 @@ macro_rules! impl_tracking_pairs {
                             }
                         );+
                     }
-                    ($([<P $i>]::show_boundary::<N, D, W, H, K, ID>()),+,).ambiguous_with_all()
+                    ($([<P $i>]::show_boundary::<ID>()),+,).ambiguous_with_all()
                 }
                 #[cfg(debug_assertions)]
                 fn shape_id() -> std::any::TypeId {
@@ -317,6 +295,8 @@ mod tests {
             4,
             100,
             100,
+            0,
+            0,
             20,
         >::default());
     }
@@ -331,6 +311,8 @@ mod tests {
             4,
             100,
             100,
+            0,
+            0,
             20,
         >::default());
     }
@@ -350,6 +332,8 @@ mod tests {
             4,
             100,
             100,
+            0,
+            0,
             20,
         >::default());
     }
@@ -367,6 +351,8 @@ mod tests {
             4,
             100,
             100,
+            0,
+            0,
             20,
         >::default());
     }
@@ -382,6 +368,8 @@ mod tests {
             4,
             100,
             100,
+            0,
+            0,
             20,
         >::default());
     }
@@ -398,6 +386,8 @@ mod tests {
             4,
             100,
             100,
+            0,
+            0,
             20,
         >::default());
     }

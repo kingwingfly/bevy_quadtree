@@ -18,20 +18,12 @@ where
     }
 }
 
-pub(crate) fn update_quadtree<
-    S,
-    const N: usize,
-    const D: usize,
-    const W: usize,
-    const H: usize,
-    const K: usize,
-    const ID: usize,
->(
-    tree: Res<QuadTree<N, D, W, H, K, ID>>,
+pub(crate) fn update_quadtree<S, const ID: usize>(
+    tree: Res<QuadTree<ID>>,
     q: Query<(Entity, &S), Changed<S>>,
     mut r: RemovedComponents<S>,
 ) where
-    QuadTree<N, D, W, H, K, ID>: Resource,
+    QuadTree<ID>: Resource,
     S: Component + AsDynCollision + Clone,
 {
     q.par_iter().for_each(|(e, s)| {
@@ -43,20 +35,12 @@ pub(crate) fn update_quadtree<
 }
 
 #[cfg(feature = "gizmos")]
-pub(crate) fn show_boundary<
-    S,
-    const N: usize,
-    const D: usize,
-    const W: usize,
-    const H: usize,
-    const K: usize,
-    const ID: usize,
->(
-    tree: Res<QuadTree<N, D, W, H, K, ID>>,
+pub(crate) fn show_boundary<S, const ID: usize>(
+    tree: Res<QuadTree<ID>>,
     q: Query<(Entity, &GlobalTransform), With<S>>,
     mut gizmos: Gizmos,
 ) where
-    QuadTree<N, D, W, H, K, ID>: Resource,
+    QuadTree<ID>: Resource,
     S: Component + AsDynCollision + Clone,
 {
     use bevy_color::palettes::css::*;

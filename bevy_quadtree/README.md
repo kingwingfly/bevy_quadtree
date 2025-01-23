@@ -68,12 +68,11 @@ A quadtree plugin for bevy.
 Function:
 - Auto update following `Changed<GlobalTransform>`, all users need to do is querying.
 - LooseQuadTree supported.
-- Compile time optimized with const type parameters.
 
 Features:
 - `gizmos`: show gizmos of the quadtree boundaries.
 - `sprite`: enable `CollisionRect` and `CollisionRotatedRect` to track `sprite.custom_size`.
-- `multi-quadtree`: support multiple quadtrees in one world.
+- `multi-quadtree`: support multiple quadtrees in one world, see [`MultiQuadTreePlugin`].
 
 Version:
 
@@ -84,6 +83,9 @@ And upgrade will be like `bevy_version.beta.x`
 
 For those who upgrade from version <= 0.15.1-alpha7, pay attention to the new type paramter `D` in `QuadTreePlugin`.
 And shapes now have `ID` as well. Moreover, the tree memory is pre-allocated, no longer dynamically allocating.
+
+For those who upgrade from version <= 0.15.1-beta.2, `X` `Y` type params added to Plugins to set the origin of boundary.
+The QuadTree's type params is simplified to only `ID` as well.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -122,13 +124,14 @@ fn main() {
         .add_plugins(QuadTreePlugin::<(
                 (CollisionCircle, GlobalTransform), (CollisionRect, (GlobalTransform, Sprite)),
             ),
-            40, 8, 100, 100, 20>::default()
+            40, 8, 100, 100, 0, 0, 20, 114514>::default()
         )
         // CollisionCircle follows GlobalTransform, CollisionRect follows Sprite and GlobalTransform
         // at most 40 entities in a node
         // at most 8 levels
-        // 100 x 100 world size
-        // 20 / 10 = 2 = outlet_boundary / inlet_boundary (for loose quadtree)
+        // 100 x 100 world size, center at (0, 0)
+        // 20 / 10 = 2.0 = outlet_boundary / inlet_boundary (for loose quadtree)
+        // quadtree id 114514
         .run();
 }
 # }
@@ -154,7 +157,8 @@ cmds.spawn((
 4. Query the quadtree like bevy's `Or, Not`:
 
 ```rust ignore
-type MyQuadTree = QuadTree<40, 8, 100, 100, 20>;
+// default id 0
+type MyQuadTree = QuadTree<114514>;
 
 fn pick(
     mut gizmos: Gizmos,
