@@ -114,13 +114,13 @@ mod tests {
         assert_eq!(qtree.len(), 1);
         // (0, 0) 1x1
         qtree.insert(
-            Entity::from_raw(rng.gen()),
+            Entity::from_raw(rng.random()),
             CollisionRect::from(Rect::from_center_size(Vec2::ZERO, Vec2::ONE)),
         );
         assert_eq!(qtree.len(), 2);
         // (1, 1) 1x1
         qtree.insert(
-            Entity::from_raw(rng.gen()),
+            Entity::from_raw(rng.random()),
             CollisionRect::from(Rect::from_center_size(Vec2::splat(1.), Vec2::ONE)),
         );
         {
@@ -128,7 +128,7 @@ mod tests {
         }
         // (1, 1) 1x1
         qtree.insert(
-            Entity::from_raw(rng.gen()),
+            Entity::from_raw(rng.random()),
             CollisionRect::from(Rect::from_center_size(Vec2::splat(1.), Vec2::ONE)),
         );
         assert_eq!(qtree.len(), 4);
@@ -137,7 +137,7 @@ mod tests {
         }
         // (0.5, 0.5) 0.2x0.2
         qtree.insert(
-            Entity::from_raw(rng.gen()),
+            Entity::from_raw(rng.random()),
             CollisionRect::from(Rect::from_center_size(Vec2::splat(0.5), Vec2::splat(0.2))),
         );
         assert_eq!(qtree.len(), 5);
@@ -195,14 +195,14 @@ mod tests {
         }
         // Test merge after remove
         qtree.insert(
-            Entity::from_raw(rng.gen()),
+            Entity::from_raw(rng.random()),
             CollisionRect::from(Rect::from_center_size(
                 Vec2::splat(-1.),
                 Vec2::new(0.2, 0.3),
             )),
         );
         qtree.insert(
-            Entity::from_raw(rng.gen()),
+            Entity::from_raw(rng.random()),
             CollisionRect::from(Rect::from_center_size(
                 Vec2::splat(-1.),
                 Vec2::new(0.2, 0.3),
