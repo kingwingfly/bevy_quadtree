@@ -22,11 +22,11 @@ use bevy_app::prelude::*;
 ///                 // CollisionCircle with default ID 0, follows GlobalTransform
 ///                 (CollisionCircle, GlobalTransform),
 ///             ),
+///             // the ID of this quadtree is 0.
 ///             // at most 40 objects in each node, 4 levels, 100x100 boundary, center at (0, 0)
 ///             // 2.0 = outlet_boundary / inlet_boundary for LooseQuadTree,
-///             // the ID of this quadtree is 0.
 ///             // query by `Res<QuadTree<0>>`
-///             40, 4, 100, 100, 0, 0, 20, 0>,
+///             0, 40, 4, 100, 100, 0, 0, 20>,
 ///         QTConfig::<(
 ///                 // CollisionRect with ID 1, follows GlobalTransform and Sprite
 ///                 (CollisionRect<1>, (GlobalTransform, Sprite)),
@@ -35,7 +35,7 @@ use bevy_app::prelude::*;
 ///             ),
 ///             // The same attribute as the previous one, but the ID is 1.
 ///             // query by `Res<QuadTree<1>>`
-///             40, 4, 100, 100, 0, 0, 20, 1>,
+///             1, 40, 4, 100, 100, 0, 0, 20>,
 ///         )>::default());
 /// # }
 /// ```
@@ -43,8 +43,8 @@ use bevy_app::prelude::*;
 /// # Panic
 /// 1. duplicated quadtree added. (Debug check only)
 ///
-/// e.g. (QTConfig<..., 40, 4, 100, 100, 0, 0, 20, 0>, QTConfig<..., 40, 4, 100, 100, 0, 0, 20, 0>)
-/// they both insert the same `QuadTree` into the world.
+/// e.g. (QTConfig<..., 0, 40, 4, 100, 100, 0, 0, 20>, QTConfig<..., 0, 40, 4, 100, 100, 0, 0, 20>)
+/// they both insert `QuadTree`s with the same ID 0 into the world.
 ///
 /// 2. duplicated shapes in the same quadtree. (Debug check only)
 ///

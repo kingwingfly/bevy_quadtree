@@ -77,7 +77,6 @@ Features:
 Version:
 
 To align with Bevy, the version is always the same as supported `Bevy`'s version.
-And upgrade will be like `bevy_version.beta.x`
 
 ### Caution
 
@@ -106,7 +105,7 @@ The QuadTree's type params is simplified to only `ID` as well.
 
 ```toml
 [dependencies]
-bevy_quadtree = { version = "0.15.1" }
+bevy_quadtree = { version = "0.15.2" }
 ```
 
 2. Add the plugin to your Bevy app:

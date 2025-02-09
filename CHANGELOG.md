@@ -9,6 +9,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.15.2] - 2025-02-09
+
+- bump deps
+- update documenation
+
 ## [0.15.1-beta.3] - 2025-01-23
 
 - remove unrelated type params of `QuadTree`
