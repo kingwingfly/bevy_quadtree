@@ -2,6 +2,7 @@ use crate::{
     collision::{AsDynCollision, UpdateCollision},
     tree::QuadTree,
 };
+use bevy_ecs::component::Mutable;
 use bevy_ecs::prelude::*;
 #[cfg(feature = "gizmos")]
 use bevy_gizmos::prelude::*;
@@ -10,7 +11,7 @@ use bevy_transform::components::GlobalTransform;
 
 pub(crate) fn update_collision<S, C>(mut q: Query<(&mut S, &C), Changed<C>>)
 where
-    S: Component + UpdateCollision<C> + Clone,
+    S: Component<Mutability = Mutable> + UpdateCollision<C> + Clone,
     C: Component,
 {
     for (s, c) in q.iter_mut() {

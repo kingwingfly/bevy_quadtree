@@ -4,20 +4,21 @@
 #[cfg(feature = "multi-quadtree")]
 mod multi_plugin;
 
-#[cfg(feature = "multi-quadtree")]
-pub use multi_plugin::{
-    AsQuadTreePluginConfig, MultiQuadTreePlugin, QTConfig, QuadTreePluginConfig,
-};
-
 use crate::collision::{AsDynCollision, UpdateCollision};
 use crate::system::{update_collision, update_quadtree};
 use crate::tree::QuadTree;
 use bevy_app::prelude::*;
+use bevy_ecs::component::Mutable;
 use bevy_ecs::prelude::*;
-use bevy_ecs::schedule::{IntoSystemConfigs, SystemConfigs};
+use bevy_ecs::schedule::ScheduleConfigs;
+use bevy_ecs::system::ScheduleSystem;
 #[cfg(feature = "sprite")]
 use bevy_sprite::Sprite;
 use bevy_transform::prelude::*;
+#[cfg(feature = "multi-quadtree")]
+pub use multi_plugin::{
+    AsQuadTreePluginConfig, MultiQuadTreePlugin, QTConfig, QuadTreePluginConfig,
+};
 
 /// A Bevy plugin for quadtree.
 /// # Type Parameters
@@ -92,16 +93,16 @@ pub struct QuadTreePlugin<
 }
 
 impl<
-        P,
-        const D: usize,
-        const N: usize,
-        const W: usize,
-        const H: usize,
-        const X: usize,
-        const Y: usize,
-        const K: usize,
-        const ID: usize,
-    > Default for QuadTreePlugin<P, N, D, W, H, X, Y, K, ID>
+    P,
+    const D: usize,
+    const N: usize,
+    const W: usize,
+    const H: usize,
+    const X: usize,
+    const Y: usize,
+    const K: usize,
+    const ID: usize,
+> Default for QuadTreePlugin<P, N, D, W, H, X, Y, K, ID>
 where
     P: TrackingPair,
 {
@@ -113,16 +114,16 @@ where
 }
 
 impl<
-        P,
-        const N: usize,
-        const D: usize,
-        const W: usize,
-        const H: usize,
-        const X: usize,
-        const Y: usize,
-        const K: usize,
-        const ID: usize,
-    > Plugin for QuadTreePlugin<P, N, D, W, H, X, Y, K, ID>
+    P,
+    const N: usize,
+    const D: usize,
+    const W: usize,
+    const H: usize,
+    const X: usize,
+    const Y: usize,
+    const K: usize,
+    const ID: usize,
+> Plugin for QuadTreePlugin<P, N, D, W, H, X, Y, K, ID>
 where
     P: TrackingPair,
 {
@@ -144,12 +145,12 @@ where
 /// Also implemented for tuple of `(S, C)` pairs.
 pub trait TrackingPair: Send + Sync + 'static {
     /// return the system to update collision
-    fn update_collision() -> SystemConfigs;
+    fn update_collision() -> ScheduleConfigs<ScheduleSystem>;
     /// return the system to update quadtree
-    fn update_quadtree<const ID: usize>() -> SystemConfigs;
+    fn update_quadtree<const ID: usize>() -> ScheduleConfigs<ScheduleSystem>;
     /// return the system to show box
     #[cfg(feature = "gizmos")]
-    fn show_boundary<const ID: usize>() -> SystemConfigs;
+    fn show_boundary<const ID: usize>() -> ScheduleConfigs<ScheduleSystem>;
     /// return the shape id, to ensure no duplicate shape updating system added
     #[cfg(debug_assertions)]
     fn shape_id() -> std::any::TypeId;
@@ -159,16 +160,16 @@ macro_rules! impl_tracking_pair {
     ($c: ty) => {
         impl<S> TrackingPair for (S, $c)
         where
-            S: Component + AsDynCollision + UpdateCollision<$c> + Clone,
+            S: Component<Mutability = Mutable> + AsDynCollision + UpdateCollision<$c> + Clone,
         {
-            fn update_collision() -> SystemConfigs {
+            fn update_collision() -> ScheduleConfigs<ScheduleSystem> {
                 update_collision::<S, $c>.ambiguous_with_all()
             }
-            fn update_quadtree<const ID: usize>() -> SystemConfigs {
+            fn update_quadtree<const ID: usize>() -> ScheduleConfigs<ScheduleSystem> {
                 update_quadtree::<S, ID>.ambiguous_with_all()
             }
             #[cfg(feature = "gizmos")]
-            fn show_boundary<const ID: usize>() -> SystemConfigs {
+            fn show_boundary<const ID: usize>() -> ScheduleConfigs<ScheduleSystem> {
                 use crate::system::show_boundary;
                 show_boundary::<S, ID>.ambiguous_with_all()
             }
@@ -188,19 +189,19 @@ macro_rules! impl_tracking_pair_tuple {
     ($($c: ty),+) => {
         impl<S> TrackingPair for (S, ($($c),+,))
         where
-            S: Component + AsDynCollision + $(UpdateCollision<$c>+)+ Clone,
+            S: Component<Mutability = Mutable> + AsDynCollision + $(UpdateCollision<$c>+)+ Clone,
         {
-            fn update_collision() -> SystemConfigs {
+            fn update_collision() -> ScheduleConfigs<ScheduleSystem> {
                 // update_collision has Mut<S>, so chain them
                 ($(update_collision::<S, $c>),+,).chain()
             }
             fn update_quadtree<const ID: usize>(
-            ) -> SystemConfigs {
+            ) -> ScheduleConfigs<ScheduleSystem> {
                 update_quadtree::<S, ID>.ambiguous_with_all()
             }
             #[cfg(feature = "gizmos")]
             fn show_boundary<const ID: usize>(
-            ) -> SystemConfigs {
+            ) -> ScheduleConfigs<ScheduleSystem> {
                 use crate::system::show_boundary;
                 show_boundary::<S, ID>.ambiguous_with_all()
             }
@@ -227,12 +228,12 @@ macro_rules! impl_tracking_pairs {
             where
                 $([<P $i>]: TrackingPair),+
             {
-                fn update_collision() -> SystemConfigs {
+                fn update_collision() -> ScheduleConfigs<ScheduleSystem> {
                     // no duplicate shape in `P`s, so ambiguous_with_all
                     ($([<P $i>]::update_collision()),+,).ambiguous_with_all()
                 }
                 fn update_quadtree<const ID: usize>(
-                ) -> SystemConfigs {
+                ) -> ScheduleConfigs<ScheduleSystem> {
                     #[cfg(debug_assertions)]
                     {
                         let mut set = std::collections::HashMap::new();
@@ -246,7 +247,7 @@ macro_rules! impl_tracking_pairs {
                 }
                 #[cfg(feature = "gizmos")]
                 fn show_boundary<const ID: usize>(
-                ) -> SystemConfigs {
+                ) -> ScheduleConfigs<ScheduleSystem> {
                     #[cfg(debug_assertions)]
                     {
                         let mut set = std::collections::HashMap::new();
