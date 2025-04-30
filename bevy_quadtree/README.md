@@ -105,7 +105,7 @@ The QuadTree's type params is simplified to only `ID` as well.
 
 ```toml
 [dependencies]
-bevy_quadtree = { version = "0.15.2" }
+bevy_quadtree = { version = "0.16.0" }
 ```
 
 2. Add the plugin to your Bevy app:
