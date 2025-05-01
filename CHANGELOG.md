@@ -9,6 +9,11 @@ Note: In this file, do not use the hard wrap in the middle of a sentence for com
 -->
 
 ## [Unreleased]
+## [0.16.0] - 2025-05-01
+
+- bump dependencies
+- support bevy 0.16.0 by @Tipuch
+
 ## [0.15.2] - 2025-02-09
 
 - bump deps
