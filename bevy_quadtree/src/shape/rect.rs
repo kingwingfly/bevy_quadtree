@@ -144,7 +144,7 @@ impl Collision<CollisionRect> for CollisionRect {
 impl Collision<CollisionRotatedRect> for CollisionRect {
     fn detect(&self, r_rect: &CollisionRotatedRect) -> Relation {
         let r_half_size = r_rect.init_size * r_rect.scale / 2.;
-        let mut vetex = [
+        let mut vertex = [
             Vec2::new(r_half_size.x, r_half_size.y),
             Vec2::new(-r_half_size.x, r_half_size.y),
             Vec2::new(-r_half_size.x, -r_half_size.y),
@@ -156,7 +156,7 @@ impl Collision<CollisionRotatedRect> for CollisionRect {
             f32::INFINITY,
             f32::NEG_INFINITY,
         );
-        for v in vetex.iter_mut() {
+        for v in vertex.iter_mut() {
             *v = r_rect.isometric * *v;
             min_x = min_x.min(v.x);
             max_x = max_x.max(v.x);
@@ -174,7 +174,7 @@ impl Collision<CollisionRotatedRect> for CollisionRect {
         {
             return Relation::Contain;
         }
-        let mut vetex = [
+        let mut vertex = [
             self_max,
             Vec2::new(self_min.x, self_max.y),
             self_min,
@@ -187,7 +187,7 @@ impl Collision<CollisionRotatedRect> for CollisionRect {
             f32::NEG_INFINITY,
         );
         let inv = r_rect.isometric.inverse();
-        for v in vetex.iter_mut() {
+        for v in vertex.iter_mut() {
             *v = inv * *v;
             min_x = min_x.min(v.x);
             max_x = max_x.max(v.x);
