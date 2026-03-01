@@ -13,14 +13,14 @@ documentation = "https://docs.rs/bevy_quadtree"
 
 [workspace.dependencies]
 bevy_quadtree = { path = "bevy_quadtree" }
-bevy_app = { version = "0.16.0", default-features = false }
-bevy_ecs = { version = "0.16.0", default-features = false }
-bevy_math = { version = "0.16.0", default-features = true }
-bevy_gizmos = { version = "0.16.0", default-features = false }
-bevy_sprite = { version = "0.16.0", default-features = false }
-bevy_transform = { version = "0.16.0", default-features = false }
-bevy_color = { version = "0.16.0", default-features = false }
-bevy_log = { version = "0.16.0", default-features = false }
+bevy_app = { version = "0.18.0", default-features = false }
+bevy_ecs = { version = "0.18.0", default-features = false }
+bevy_math = { version = "0.18.0", default-features = true }
+bevy_gizmos = { version = "0.18.0", default-features = false }
+bevy_sprite = { version = "0.18.0", default-features = false }
+bevy_transform = { version = "0.18.0", default-features = false }
+bevy_color = { version = "0.18.0", default-features = false }
+bevy_log = { version = "0.18.0", default-features = false }
 
 
 [profile.dev]
